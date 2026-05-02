@@ -84,7 +84,7 @@ export default function LoginPage() {
         {/* Card */}
         <div className="bg-white rounded-3xl p-8" style={{ boxShadow: "0 25px 60px rgba(0,0,0,0.3)" }}>
           <div className="flex justify-center mb-8">
-            <Image src="/logo.png" alt="ConFiaX Seguros" width={160} height={48} priority />
+            <Image src="/logo.svg" alt="ConFiaX Seguros" width={300} height={90} priority unoptimized />
           </div>
 
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Bem-vindo</h1>

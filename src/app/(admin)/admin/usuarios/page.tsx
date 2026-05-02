@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createServerClient } from "@/lib/supabase/server";
 import type { User } from "@/types";
 import NovoUsuarioButton from "./NovoUsuarioButton";
@@ -36,6 +37,7 @@ export default async function AdminUsuariosPage() {
             Painel
           </Link>
           <div className="w-px h-4 bg-gray-200" />
+          <Image src="/logo-icon.svg" alt="" width={20} height={20} aria-hidden="true" />
           <h1 className="text-sm font-bold text-gray-900">Usuários</h1>
         </div>
         <NovoUsuarioButton />

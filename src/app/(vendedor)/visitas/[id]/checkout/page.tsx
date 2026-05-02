@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import type { Visita } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -99,6 +100,7 @@ export default function CheckoutPage() {
           Voltar
         </Link>
         <div className="w-px h-4 bg-gray-200" />
+        <Image src="/logo-icon.svg" alt="" width={20} height={20} aria-hidden="true" />
         <h1 className="text-sm font-semibold text-gray-900">Checkout</h1>
       </header>
 

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 130" role="img" aria-label="Confiax Visita">
+  <title>Confiax Visita</title>
+  <g>
+    <path d="M 50 10 C 27.9 10 10 27.9 10 50 C 10 82 50 118 50 118 C 50 118 90 82 90 50 C 90 27.9 72.1 10 50 10 Z" fill="#FFFFFF"/>
+    <path d="M 32 50 L 45 63 L 70 38" stroke="#00AEEF" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="115" y="55" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="28" font-weight="400" fill="#FFFFFF" opacity="0.85" letter-spacing="0.5">Confiax</text>
+  <text x="115" y="105" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="58" font-weight="800" fill="#FFFFFF" letter-spacing="-0.5">Visita</text>
+</svg>

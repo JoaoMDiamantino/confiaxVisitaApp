@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createServerClient } from "@/lib/supabase/server";
 import RelatoriosClient from "./RelatoriosClient";
 
@@ -28,6 +29,7 @@ export default async function RelatoriosPage() {
           Painel
         </Link>
         <div className="w-px h-4 bg-gray-200" />
+        <Image src="/logo-icon.svg" alt="" width={20} height={20} aria-hidden="true" />
         <h1 className="text-sm font-bold text-gray-900">Relatórios</h1>
       </header>
 

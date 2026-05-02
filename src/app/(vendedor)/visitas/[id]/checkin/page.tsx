@@ -121,6 +121,7 @@ export default function CheckinPage() {
           Voltar
         </Link>
         <div className="w-px h-4 bg-gray-200" />
+        <Image src="/logo-icon.svg" alt="" width={20} height={20} aria-hidden="true" />
         <h1 className="text-sm font-semibold text-gray-900">Check-in</h1>
       </header>
 

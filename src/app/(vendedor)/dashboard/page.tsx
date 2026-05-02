@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Visita } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -38,41 +39,43 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-[#f0f4f8]">
       {/* Gradient hero header */}
       <div
-        className="relative overflow-hidden px-4 pb-8 pt-12"
-        style={{ background: "linear-gradient(135deg, #002952 0%, #0070b8 60%, #00AEEF 100%)" }}
+        className="relative overflow-hidden px-4 pb-10 pt-10"
+        style={{ background: "linear-gradient(160deg, #002952 0%, #0070b8 60%, #00AEEF 100%)" }}
       >
         <div
-          className="absolute -top-20 -right-20 w-64 h-64 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)" }}
+          className="absolute -top-24 -right-24 w-72 h-72 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)" }}
         />
         <div
-          className="absolute bottom-0 left-0 right-0 h-8 pointer-events-none"
-          style={{ background: "linear-gradient(to bottom, transparent, rgba(0,41,82,0.08))" }}
+          className="absolute -bottom-8 -left-8 w-48 h-48 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(0,174,239,0.2) 0%, transparent 70%)" }}
         />
 
-        {/* Top bar */}
+        {/* Top bar: logo esquerda, sair direita */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-white/20 border-2 border-white/30 flex items-center justify-center text-white text-base font-bold">
-              {initial}
-            </div>
-            <div>
-              <p className="text-white/60 text-xs">Olá,</p>
-              <p className="text-white font-semibold text-sm leading-tight">{profile?.name}</p>
-            </div>
-          </div>
-          <LogoutButton className="text-white/50 hover:text-white text-xs transition" />
+          <Image src="/logo.svg" alt="ConFiaX Seguros" width={140} height={42} priority unoptimized />
+          <LogoutButton className="text-white/40 hover:text-white text-xs transition" />
         </div>
 
-        {/* Quick stats */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white/15 rounded-2xl p-4 border border-white/20 backdrop-blur-sm">
-            <p className="text-white/60 text-xs mb-1">Agendadas</p>
-            <p className="text-white text-3xl font-extrabold tabular-nums">{agendadas.length}</p>
+        {/* Identidade e stats centralizados */}
+        <div className="flex flex-col items-center text-center gap-5">
+          <div className="flex flex-col items-center gap-1">
+            <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/30 flex items-center justify-center text-white text-lg font-bold">
+              {initial}
+            </div>
+            <p className="text-white font-semibold text-sm">{profile?.name}</p>
+            <p className="text-white/50 text-xs">Bem-vindo de volta</p>
           </div>
-          <div className="bg-white/15 rounded-2xl p-4 border border-white/20 backdrop-blur-sm">
-            <p className="text-white/60 text-xs mb-1">Concluídas</p>
-            <p className="text-white text-3xl font-extrabold tabular-nums">{historico.length}</p>
+
+          <div className="flex gap-3 w-full max-w-xs">
+            <div className="flex-1 bg-white/15 rounded-2xl p-4 border border-white/20 backdrop-blur-sm text-center">
+              <p className="text-white/60 text-xs mb-1">Agendadas</p>
+              <p className="text-white text-3xl font-extrabold tabular-nums">{agendadas.length}</p>
+            </div>
+            <div className="flex-1 bg-white/15 rounded-2xl p-4 border border-white/20 backdrop-blur-sm text-center">
+              <p className="text-white/60 text-xs mb-1">Concluídas</p>
+              <p className="text-white text-3xl font-extrabold tabular-nums">{historico.length}</p>
+            </div>
           </div>
         </div>
       </div>
