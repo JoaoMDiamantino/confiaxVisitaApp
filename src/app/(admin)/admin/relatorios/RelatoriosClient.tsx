@@ -37,7 +37,7 @@ export default function RelatoriosClient() {
     const visitas = await fetchVisitas();
     if (visitas.length === 0) { setError("Nenhuma visita no período selecionado."); return; }
 
-    const header = ["Vendedor", "E-mail", "Imobiliária", "Data agendada", "Check-in", "Checkout", "Duração (min)", "Nota", "Comentários"];
+    const header = ["Gestor", "E-mail", "Imobiliária", "Data agendada", "Check-in", "Checkout", "Duração (min)", "Nota", "Comentários"];
     const rows = visitas.map((v) => [
       (v.users as { name: string } | undefined)?.name ?? "",
       (v.users as { email: string } | undefined)?.email ?? "",
@@ -79,7 +79,7 @@ export default function RelatoriosClient() {
 
     autoTable(doc, {
       startY: 22,
-      head: [["Vendedor", "Imobiliária", "Data agendada", "Duração", "Nota"]],
+      head: [["Gestor", "Imobiliária", "Data agendada", "Duração", "Nota"]],
       body: visitas.map((v) => [
         (v.users as { name: string } | undefined)?.name ?? "",
         (v.imobiliarias as { name: string } | undefined)?.name ?? "",

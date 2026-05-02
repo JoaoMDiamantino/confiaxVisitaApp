@@ -46,7 +46,7 @@ export default async function AdminVisitasPage() {
           <table className="w-full text-sm min-w-[700px]">
             <thead>
               <tr className="border-b border-gray-100 text-left">
-                {["Vendedor", "Imobiliária", "Agendado", "Check-in", "Duração", "Nota", "Status"].map((h) => (
+                {["Gestor", "Imobiliária", "Agendado", "Check-in", "Duração", "Nota", "Status"].map((h) => (
                   <th key={h} className="px-4 py-3 text-xs font-medium text-gray-400">{h}</th>
                 ))}
               </tr>

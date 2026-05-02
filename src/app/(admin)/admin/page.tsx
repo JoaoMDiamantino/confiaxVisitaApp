@@ -66,7 +66,7 @@ export default async function AdminPage() {
               { label: "Visitas no mês", value: totalVisitas },
               { label: "Nota média", value: notaMedia },
               { label: "Duração média", value: duracaoMedia ? formatDuration(duracaoMedia) : "—" },
-              { label: "Vendedores ativos", value: Object.keys(porVendedor ?? {}).length },
+              { label: "Gestores ativos", value: Object.keys(porVendedor ?? {}).length },
             ].map((kpi) => (
               <div key={kpi.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                 <p className="text-xs text-gray-400 mb-1">{kpi.label}</p>
@@ -77,12 +77,12 @@ export default async function AdminPage() {
         </div>
 
         <div>
-          <h2 className="text-sm font-medium text-gray-500 mb-4">Resumo por vendedor</h2>
+          <h2 className="text-sm font-medium text-gray-500 mb-4">Resumo por gestor</h2>
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-left">
-                  <th className="px-4 py-3 text-xs font-medium text-gray-400">Vendedor</th>
+                  <th className="px-4 py-3 text-xs font-medium text-gray-400">Gestor</th>
                   <th className="px-4 py-3 text-xs font-medium text-gray-400">Visitas</th>
                   <th className="px-4 py-3 text-xs font-medium text-gray-400">Nota média</th>
                 </tr>

@@ -77,7 +77,7 @@ export default function NovoUsuarioButton() {
                   value={role} onChange={(e) => setRole(e.target.value as "vendedor" | "admin")}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#00AEEF] focus:ring-2 focus:ring-[#00AEEF]/20"
                 >
-                  <option value="vendedor">Vendedor</option>
+                  <option value="vendedor">Gestor</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
