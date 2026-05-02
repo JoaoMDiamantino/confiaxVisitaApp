@@ -3,7 +3,11 @@
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LogoutButton() {
+interface Props {
+  className?: string;
+}
+
+export default function LogoutButton({ className }: Props) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -16,7 +20,7 @@ export default function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="text-xs text-gray-400 hover:text-gray-600 transition"
+      className={className ?? "text-xs text-gray-400 hover:text-gray-600 transition"}
     >
       Sair
     </button>

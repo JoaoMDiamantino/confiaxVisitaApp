@@ -2,4 +2,12 @@
 
 :root {
   --color-primary: #00AEEF;
+  --color-primary-dark: #0084c7;
+}
+
+@layer base {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
