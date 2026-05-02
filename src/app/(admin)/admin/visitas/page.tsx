@@ -21,11 +21,18 @@ export default async function AdminVisitasPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const { data: currentProfile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (currentProfile?.role !== "admin") redirect("/dashboard");
+
   const { data: visitas } = await supabase
     .from("visitas")
     .select("*, users(name, email), imobiliarias(name)")
     .order("scheduled_at", { ascending: false })
-    .limit(100);
+    .limit(500);
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -11,7 +11,7 @@ import StarRating from "@/components/StarRating";
 export default function CheckoutPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [visita, setVisita] = useState<Visita | null>(null);
   const [rating, setRating] = useState(0);
@@ -20,13 +20,26 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase
-      .from("visitas")
-      .select("*, imobiliarias(id, name, address)")
-      .eq("id", id)
-      .single()
-      .then(({ data }) => setVisita(data as Visita));
-  }, [id, supabase]);
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push("/login"); return; }
+
+      const { data } = await supabase
+        .from("visitas")
+        .select("*, imobiliarias(id, name, address)")
+        .eq("id", id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (!data || data.status !== "em_andamento") {
+        router.push("/dashboard");
+        return;
+      }
+
+      setVisita(data as Visita);
+    }
+    load();
+  }, [id, supabase, router]);
 
   async function handleCheckout(e: React.FormEvent) {
     e.preventDefault();
@@ -42,6 +55,9 @@ export default function CheckoutPage() {
     }
 
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push("/login"); return; }
+
     const now = new Date();
     const checkinAt = visita?.checkin_at ? new Date(visita.checkin_at) : now;
     const durationMinutes = Math.round((now.getTime() - checkinAt.getTime()) / 60000);
@@ -55,7 +71,8 @@ export default function CheckoutPage() {
         notes: notes.trim(),
         status: "concluida",
       })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", user.id);
 
     if (updateError) {
       setError("Erro ao registrar checkout. Tente novamente.");

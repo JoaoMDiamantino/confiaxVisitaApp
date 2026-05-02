@@ -10,9 +10,16 @@ export default async function AdminUsuariosPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const { data: currentProfile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (currentProfile?.role !== "admin") redirect("/dashboard");
+
   const { data: usuarios } = await supabase
     .from("users")
-    .select("*")
+    .select("id, name, email, role, active, created_at")
     .order("name");
 
   return (

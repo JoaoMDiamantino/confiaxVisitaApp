@@ -18,45 +18,47 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (authError) {
-      setError("E-mail ou senha inválidos.");
+      if (authError) {
+        setError("E-mail ou senha inválidos.");
+        return;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError("Erro ao obter usuário.");
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("users")
+        .select("role, active")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError || !profile) {
+        await supabase.auth.signOut();
+        setError("Erro ao acessar o sistema. Contate o administrador.");
+        return;
+      }
+
+      if (!profile.active) {
+        await supabase.auth.signOut();
+        setError("Usuário inativo. Entre em contato com o administrador.");
+        return;
+      }
+
+      router.push(profile.role === "admin" ? "/admin" : "/dashboard");
+    } catch {
+      setError("Erro de conexão. Verifique sua internet e tente novamente.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setError("Erro ao obter usuário.");
-      setLoading(false);
-      return;
-    }
-
-    const { data: profile, error: profileError } = await supabase
-      .from("users")
-      .select("role, active")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !profile) {
-      await supabase.auth.signOut();
-      setError(`Perfil não encontrado: ${profileError?.message ?? "sem dados"}`);
-      setLoading(false);
-      return;
-    }
-
-    if (!profile.active) {
-      await supabase.auth.signOut();
-      setError("Usuário inativo. Entre em contato com o administrador.");
-      setLoading(false);
-      return;
-    }
-
-    window.location.href = profile?.role === "admin" ? "/admin" : "/dashboard";
   }
 
   return (

@@ -53,3 +53,37 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }
+
+export async function PATCH(req: NextRequest) {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "admin") {
+    return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+  }
+
+  const { userId, active } = await req.json();
+
+  if (!userId || typeof active !== "boolean") {
+    return NextResponse.json({ error: "Campos obrigatórios ausentes." }, { status: 400 });
+  }
+
+  const adminClient = createAdminClient();
+  const { error: updateError } = await adminClient
+    .from("users")
+    .update({ active })
+    .eq("id", userId);
+
+  if (updateError) {
+    return NextResponse.json({ error: "Erro ao atualizar usuário." }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

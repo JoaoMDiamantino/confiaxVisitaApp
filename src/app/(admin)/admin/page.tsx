@@ -9,6 +9,13 @@ export default async function AdminPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const { data: currentProfile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (currentProfile?.role !== "admin") redirect("/dashboard");
+
   const now = new Date();
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
@@ -28,9 +35,9 @@ export default async function AdminPage() {
     : null;
 
   // Resumo por vendedor
-  const porVendedor = visitasMes?.reduce<Record<string, { name: string; total: number; somaNotas: number }>>((acc, v) => {
+  const porVendedor = visitasMes?.reduce<Record<string, { id: string; name: string; total: number; somaNotas: number }>>((acc, v) => {
     const nome = (v.users as unknown as { name: string } | null)?.name ?? "—";
-    if (!acc[v.user_id]) acc[v.user_id] = { name: nome, total: 0, somaNotas: 0 };
+    if (!acc[v.user_id]) acc[v.user_id] = { id: v.user_id, name: nome, total: 0, somaNotas: 0 };
     acc[v.user_id].total++;
     acc[v.user_id].somaNotas += v.rating ?? 0;
     return acc;
@@ -82,7 +89,7 @@ export default async function AdminPage() {
               </thead>
               <tbody>
                 {Object.values(porVendedor ?? {}).map((v) => (
-                  <tr key={v.name} className="border-b border-gray-50 last:border-0">
+                  <tr key={v.id} className="border-b border-gray-50 last:border-0">
                     <td className="px-4 py-3 text-gray-900">{v.name}</td>
                     <td className="px-4 py-3 text-gray-600">{v.total}</td>
                     <td className="px-4 py-3 text-gray-600">

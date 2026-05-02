@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -11,7 +11,7 @@ import { formatDate } from "@/lib/utils";
 export default function CheckinPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [visita, setVisita] = useState<Visita | null>(null);
@@ -21,17 +21,42 @@ export default function CheckinPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase
-      .from("visitas")
-      .select("*, imobiliarias(id, name, address)")
-      .eq("id", id)
-      .single()
-      .then(({ data }) => setVisita(data as Visita));
-  }, [id, supabase]);
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push("/login"); return; }
+
+      const { data } = await supabase
+        .from("visitas")
+        .select("*, imobiliarias(id, name, address)")
+        .eq("id", id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (!data || data.status !== "agendada") {
+        router.push("/dashboard");
+        return;
+      }
+
+      setVisita(data as Visita);
+    }
+    load();
+  }, [id, supabase, router]);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0];
     if (!selected) return;
+
+    if (selected.size > 10 * 1024 * 1024) {
+      setError("A foto não pode ultrapassar 10 MB.");
+      return;
+    }
+    if (!selected.type.startsWith("image/")) {
+      setError("Apenas imagens são permitidas.");
+      return;
+    }
+
+    if (preview) URL.revokeObjectURL(preview);
+    setError(null);
     setFile(selected);
     setPreview(URL.createObjectURL(selected));
   }
@@ -68,7 +93,8 @@ export default function CheckinPage() {
         photo_url: urlData.publicUrl,
         status: "em_andamento",
       })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", user.id);
 
     if (updateError) {
       setError("Erro ao registrar check-in. Tente novamente.");
@@ -110,7 +136,11 @@ export default function CheckinPage() {
                 className="w-full rounded-lg object-cover max-h-64"
               />
               <button
-                onClick={() => { setPreview(null); setFile(null); }}
+                onClick={() => {
+                  URL.revokeObjectURL(preview);
+                  setPreview(null);
+                  setFile(null);
+                }}
                 className="absolute top-2 right-2 bg-black/50 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center"
               >
                 ✕

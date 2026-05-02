@@ -50,8 +50,11 @@ export default function RelatoriosClient() {
       v.notes?.replace(/\n/g, " ") ?? "",
     ]);
 
+    const escapeCell = (cell: string | number) =>
+      `"${String(cell).replace(/"/g, '""')}"`;
+
     const csv = [header, ...rows]
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .map((row) => row.map(escapeCell).join(","))
       .join("\n");
 
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });

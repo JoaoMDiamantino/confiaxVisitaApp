@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -8,7 +8,7 @@ import type { Imobiliaria } from "@/types";
 
 export default function AgendarVisitaPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [imobiliarias, setImobiliarias] = useState<Imobiliaria[]>([]);
   const [imobiliariaId, setImobiliariaId] = useState("");
