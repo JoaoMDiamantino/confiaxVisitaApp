@@ -101,7 +101,12 @@ export default function CheckoutPage() {
         </Link>
         <div className="w-px h-4 bg-gray-200" />
         <Image src="/logo-icon.svg" alt="" width={20} height={20} aria-hidden="true" />
-        <h1 className="text-sm font-semibold text-gray-900">Checkout</h1>
+        <div className="min-w-0">
+          <h1 className="text-sm font-semibold text-gray-900 leading-tight">Checkout</h1>
+          {visita && (
+            <p className="text-xs text-gray-400 truncate">{imob?.name}</p>
+          )}
+        </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
