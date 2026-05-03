@@ -1,4 +1,4 @@
-# PRD — ConFiaX Visita
+# PRD — Confiax Visita
 **Produto:** App de Gestão de Visitas de Vendedores  
 **Empresa:** ConFiaX Seguros  
 **Data:** 2026-05-01  
@@ -68,7 +68,8 @@ Aplicação web responsiva para gestão das visitas dos vendedores/gestores de c
 
 ### 4.6 Painel do Vendedor
 - Lista de visitas agendadas
-- Histórico de visitas realizadas com nota e comentários
+- Histórico de visitas realizadas com nota e comentários (exibe as 5 mais recentes na página principal)
+- Acesso ao histórico completo em `/historico` com filtros de imobiliária e período
 - Status da visita: Agendada / Em andamento / Concluída
 
 ### 4.7 Painel Admin (Gerente)
@@ -165,6 +166,7 @@ Relatórios exportáveis em **CSV** e **PDF**.
 | `/admin/usuarios` | Admin | Gestão de usuários |
 | `/admin/visitas` | Admin | Histórico completo com filtros |
 | `/admin/relatorios` | Admin | Exportação de relatórios |
+| `/historico` | Vendedor | Histórico completo de visitas com filtros de imobiliária e data |
 
 ---
 
@@ -189,6 +191,22 @@ Relatórios exportáveis em **CSV** e **PDF**.
 - Modo offline
 - Nota média por imobiliária nos KPIs
 - Subcritérios de avaliação
+
+---
+
+## 13. Componentes Compartilhados
+
+Componentes React reutilizáveis criados durante o desenvolvimento:
+
+| Componente | Arquivo | Descrição |
+|---|---|---|
+| `VisitaCard` | `src/components/VisitaCard.tsx` | Card de visita agendada ou em andamento com botão de ação |
+| `StarRating` | `src/components/StarRating.tsx` | Avaliação interativa de 1 a 5 estrelas com acessibilidade |
+| `LogoutButton` | `src/components/LogoutButton.tsx` | Botão de logout reutilizável |
+| `AdminNav` | `src/components/AdminNav.tsx` | `AdminDesktopNav` (nav horizontal desktop) e `AdminBottomNav` (barra fixa mobile com safe-area) |
+| `SuccessToast` | `src/components/SuccessToast.tsx` | Toast de feedback positivo com auto-dismiss 4s, parametrizável por query param |
+| `HistoricoList` | `src/components/HistoricoList.tsx` | Lista com até 5 visitas concluídas e link para o histórico completo |
+| `HistoricoFiltros` | `src/components/HistoricoFiltros.tsx` | Filtros client-side de imobiliária e intervalo de datas com contador de resultados |
 
 ---
 
