@@ -4,10 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Visita } from "@/types";
-import { formatDate } from "@/lib/utils";
 import LogoutButton from "@/components/LogoutButton";
 import VisitaCard from "@/components/VisitaCard";
 import SuccessToast from "@/components/SuccessToast";
+import HistoricoList from "@/components/HistoricoList";
 
 export default async function DashboardPage() {
   const supabase = await createServerClient();
@@ -123,45 +123,7 @@ export default async function DashboardPage() {
         {/* Histórico */}
         <section>
           <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Histórico</h2>
-
-          {historico.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm">
-              <p className="text-sm text-gray-400">Nenhuma visita concluída.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {historico.map((visita) => (
-                <div key={visita.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex">
-                  <div className="w-[3px] flex-shrink-0 bg-emerald-400" />
-                  <div className="flex-1 p-4">
-                    <div className="flex items-start justify-between mb-1">
-                      <p className="text-sm font-semibold text-gray-900 flex-1 min-w-0 pr-2 truncate">
-                        {(visita.imobiliarias as { name: string } | undefined)?.name}
-                      </p>
-                      <div className="flex items-center gap-0.5 flex-shrink-0">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <span key={i} className={`text-xs ${i < (visita.rating ?? 0) ? "text-amber-400" : "text-gray-200"}`}>
-                            ★
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-400">{formatDate(visita.scheduled_at)}</p>
-                    {visita.notes && (
-                      <p className="text-xs text-gray-500 mt-2 line-clamp-2 leading-relaxed">{visita.notes}</p>
-                    )}
-                    {visita.duration_minutes && (
-                      <p className="text-xs text-gray-400 mt-2">
-                        <span className="bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">
-                          {visita.duration_minutes} min
-                        </span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <HistoricoList visitas={historico} />
         </section>
       </main>
     </div>
