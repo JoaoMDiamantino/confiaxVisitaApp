@@ -21,19 +21,23 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .single();
 
-  const { data: visitas } = await supabase
-    .from("visitas")
-    .select("*, imobiliarias(id, name, address)")
-    .eq("user_id", user.id)
-    .order("scheduled_at", { ascending: false });
+  const [{ data: agendadasData }, { data: historicoData }] = await Promise.all([
+    supabase
+      .from("visitas")
+      .select("*, imobiliarias(id, name, address)")
+      .eq("user_id", user.id)
+      .in("status", ["agendada", "em_andamento"])
+      .order("scheduled_at", { ascending: true }),
+    supabase
+      .from("visitas")
+      .select("*, imobiliarias(id, name, address)")
+      .eq("user_id", user.id)
+      .eq("status", "concluida")
+      .order("scheduled_at", { ascending: false }),
+  ]);
 
-  const agendadas = (visitas as Visita[])?.filter(
-    (v) => v.status === "agendada" || v.status === "em_andamento"
-  ) ?? [];
-
-  const historico = (visitas as Visita[])?.filter(
-    (v) => v.status === "concluida"
-  ) ?? [];
+  const agendadas = (agendadasData as Visita[]) ?? [];
+  const historico = (historicoData as Visita[]) ?? [];
 
   const initial = profile?.name?.[0]?.toUpperCase() ?? "V";
 
