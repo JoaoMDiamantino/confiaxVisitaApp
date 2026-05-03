@@ -40,6 +40,7 @@ Copy `.env.local.example` to `.env.local` and fill in the values before running.
 | `/visitas/agendar` | Vendedor | Schedule a new visit |
 | `/visitas/[id]/checkin` | Vendedor | Check-in with mandatory photo upload |
 | `/visitas/[id]/checkout` | Vendedor | Checkout with mandatory evaluation |
+| `/historico` | Vendedor | Full visit history with imobiliária and date filters |
 | `/admin` | Admin | KPI dashboard |
 | `/admin/usuarios` | Admin | User management |
 | `/admin/visitas` | Admin | Full visit history with filters |
@@ -77,6 +78,18 @@ Row-Level Security (RLS): vendedores may only SELECT/UPDATE their own `visitas` 
 - No minimum visit duration enforced
 - Inactive users (`active = false`) must be blocked at login
 - Imobiliárias are managed directly in Supabase — there is no app UI for this in v1
+
+### Shared Components
+
+| Component | File | Notes |
+|---|---|---|
+| `VisitaCard` | `src/components/VisitaCard.tsx` | Shows scheduled/in-progress visit; renders check-in or checkout CTA |
+| `StarRating` | `src/components/StarRating.tsx` | 1–5 star picker; `role="group"`, `aria-label` and `aria-pressed` per star |
+| `LogoutButton` | `src/components/LogoutButton.tsx` | Accepts optional `className` |
+| `AdminNav` | `src/components/AdminNav.tsx` | Two named exports: `AdminDesktopNav` (horizontal links, `hidden md:flex`) and `AdminBottomNav` (fixed bottom bar, `md:hidden`). Both use `usePathname()` for active state. Add to every admin page; pair with `pb-24 md:pb-X` on `<main>`. |
+| `SuccessToast` | `src/components/SuccessToast.tsx` | Client component. Reads a URL query param (`param` prop), shows toast, clears param via `history.replaceState`. Wrap in `<Suspense>`. Usage: redirect to `/dashboard?agendado=1`, render `<SuccessToast param="agendado" message="..." />` in dashboard. |
+| `HistoricoList` | `src/components/HistoricoList.tsx` | Server component. Shows up to 5 completed visits; always renders a link to `/historico`. |
+| `HistoricoFiltros` | `src/components/HistoricoFiltros.tsx` | Client component. Receives all `visitas` and `imobiliarias` from server; filters client-side by imobiliária id and date range. Used in `/historico`. |
 
 ### Visual Identity
 
