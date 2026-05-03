@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { createServerClient } from "@/lib/supabase/server";
@@ -6,6 +7,7 @@ import type { Visita } from "@/types";
 import { formatDate } from "@/lib/utils";
 import LogoutButton from "@/components/LogoutButton";
 import VisitaCard from "@/components/VisitaCard";
+import SuccessToast from "@/components/SuccessToast";
 
 export default async function DashboardPage() {
   const supabase = await createServerClient();
@@ -37,6 +39,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#f0f4f8]">
+      <Suspense>
+        <SuccessToast param="agendado" message="Visita agendada com sucesso!" />
+      </Suspense>
+
       {/* Gradient hero header */}
       <div
         className="relative overflow-hidden px-4 pb-10 pt-10"

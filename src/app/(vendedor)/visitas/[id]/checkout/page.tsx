@@ -106,7 +106,7 @@ export default function CheckoutPage() {
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
         {/* Visit info card */}
-        {visita && (
+        {visita ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex">
             <div className="w-[3px] flex-shrink-0 bg-amber-400" />
             <div className="flex-1 p-4">
@@ -115,6 +115,15 @@ export default function CheckoutPage() {
               <p className="text-xs text-gray-400 mt-1">
                 Check-in: {visita.checkin_at ? formatDate(visita.checkin_at) : "—"}
               </p>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex animate-pulse">
+            <div className="w-[3px] flex-shrink-0 bg-gray-100" />
+            <div className="flex-1 p-4 space-y-2">
+              <div className="h-4 bg-gray-100 rounded w-3/4" />
+              <div className="h-3 bg-gray-100 rounded w-1/2" />
+              <div className="h-3 bg-gray-100 rounded w-1/3" />
             </div>
           </div>
         )}
@@ -144,15 +153,20 @@ export default function CheckoutPage() {
                 Comentários
                 <span className="text-red-400 ml-1">*</span>
               </label>
+              <p className="text-xs text-gray-400 mb-2">Descreva as principais atividades, assuntos discutidos e resultados da visita.</p>
               <textarea
                 required
                 rows={5}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Descreva as principais atividades, assuntos discutidos e resultados da visita..."
-                className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none focus:border-emerald-400 focus:bg-white transition resize-none placeholder:text-gray-300 leading-relaxed"
+                placeholder="Ex: Apresentei os produtos ao gerente, discutimos parceria para lançamentos..."
+                className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none focus:border-[#00AEEF] focus:bg-white transition resize-none placeholder:text-gray-300 leading-relaxed"
               />
-              <p className="text-xs text-gray-400 mt-1.5 text-right">{notes.length} caracteres</p>
+              <p className={`text-xs mt-1.5 text-right transition-colors ${notes.length > 0 && notes.trim().length < 3 ? "text-amber-500" : "text-gray-400"}`}>
+                {notes.trim().length < 3
+                  ? `${notes.trim().length}/3 caracteres mínimos`
+                  : `${notes.length} caracteres`}
+              </p>
             </div>
 
             {error && (

@@ -53,7 +53,7 @@ export default function AgendarVisitaPage() {
       return;
     }
 
-    router.push("/dashboard");
+    router.push("/dashboard?agendado=1");
   }
 
   return (
@@ -81,7 +81,7 @@ export default function AgendarVisitaPage() {
 
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                Imobiliária
+                Imobiliária <span className="text-red-400">*</span>
               </label>
               <select
                 required
@@ -100,7 +100,7 @@ export default function AgendarVisitaPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                  Data
+                  Data <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="date"
@@ -114,7 +114,7 @@ export default function AgendarVisitaPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                  Horário
+                  Horário <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="time"
