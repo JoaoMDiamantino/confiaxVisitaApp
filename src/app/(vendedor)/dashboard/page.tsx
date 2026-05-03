@@ -87,7 +87,7 @@ export default async function DashboardPage() {
             <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Próximas visitas</h2>
             <Link
               href="/visitas/agendar"
-              className="bg-[#00AEEF] text-white text-xs font-semibold rounded-xl px-4 py-2 hover:bg-[#0084c7] active:scale-95 transition"
+              className="bg-[#00AEEF] text-white text-xs font-semibold rounded-xl px-4 min-h-[44px] flex items-center hover:bg-[#0084c7] active:scale-95 transition"
             >
               + Agendar
             </Link>

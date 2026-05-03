@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { createServerClient } from "@/lib/supabase/server";
 import RelatoriosClient from "./RelatoriosClient";
+import { AdminBottomNav } from "@/components/AdminNav";
 
 export default async function RelatoriosPage() {
   const supabase = await createServerClient();
@@ -33,9 +34,11 @@ export default async function RelatoriosPage() {
         <h1 className="text-sm font-bold text-gray-900">Relatórios</h1>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 md:px-6 py-6">
+      <main className="max-w-4xl mx-auto px-4 md:px-6 py-6 pb-24 md:pb-6">
         <RelatoriosClient />
       </main>
+
+      <AdminBottomNav />
     </div>
   );
 }

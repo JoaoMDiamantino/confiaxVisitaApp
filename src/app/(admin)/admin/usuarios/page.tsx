@@ -5,6 +5,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import type { User } from "@/types";
 import NovoUsuarioButton from "./NovoUsuarioButton";
 import ToggleAtivoButton from "./ToggleAtivoButton";
+import { AdminBottomNav } from "@/components/AdminNav";
 
 export default async function AdminUsuariosPage() {
   const supabase = await createServerClient();
@@ -43,7 +44,7 @@ export default async function AdminUsuariosPage() {
         <NovoUsuarioButton />
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 md:px-6 py-6">
+      <main className="max-w-4xl mx-auto px-4 md:px-6 py-6 pb-24 md:pb-6">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
@@ -88,6 +89,8 @@ export default async function AdminUsuariosPage() {
           </table>
         </div>
       </main>
+
+      <AdminBottomNav />
     </div>
   );
 }

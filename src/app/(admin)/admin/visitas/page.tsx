@@ -4,6 +4,7 @@ import Image from "next/image";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Visita } from "@/types";
 import { formatDate, formatDuration } from "@/lib/utils";
+import { AdminBottomNav } from "@/components/AdminNav";
 
 const STATUS_LABEL: Record<string, string> = {
   agendada: "Agendada",
@@ -52,7 +53,7 @@ export default async function AdminVisitasPage() {
         <h1 className="text-sm font-bold text-gray-900">Todas as visitas</h1>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 md:px-6 py-6">
+      <main className="max-w-6xl mx-auto px-4 md:px-6 py-6 pb-24 md:pb-6">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
           <table className="w-full text-sm min-w-[700px]">
             <thead>
@@ -101,6 +102,8 @@ export default async function AdminVisitasPage() {
           </table>
         </div>
       </main>
+
+      <AdminBottomNav />
     </div>
   );
 }

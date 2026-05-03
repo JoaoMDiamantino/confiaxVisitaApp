@@ -4,6 +4,7 @@ import Image from "next/image";
 import { createServerClient } from "@/lib/supabase/server";
 import { formatDuration } from "@/lib/utils";
 import LogoutButton from "@/components/LogoutButton";
+import { AdminDesktopNav, AdminBottomNav } from "@/components/AdminNav";
 
 export default async function AdminPage() {
   const supabase = await createServerClient();
@@ -86,13 +87,6 @@ export default async function AdminPage() {
     },
   ];
 
-  const navLinks = [
-    { href: "/admin", label: "KPIs", active: true },
-    { href: "/admin/visitas", label: "Visitas", active: false },
-    { href: "/admin/usuarios", label: "Usuários", active: false },
-    { href: "/admin/relatorios", label: "Relatórios", active: false },
-  ];
-
   return (
     <div className="min-h-screen bg-[#f0f4f8]">
       <header className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
@@ -101,26 +95,12 @@ export default async function AdminPage() {
           <h1 className="text-sm font-bold text-gray-900">Painel Admin</h1>
         </div>
         <div className="flex items-center gap-4">
-          <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                  item.active
-                    ? "bg-[#00AEEF]/10 text-[#00AEEF]"
-                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <AdminDesktopNav />
           <LogoutButton />
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 md:px-6 py-8 space-y-8">
+      <main className="max-w-5xl mx-auto px-4 md:px-6 py-8 space-y-8 pb-24 md:pb-8">
         {/* KPIs */}
         <div>
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
@@ -188,23 +168,9 @@ export default async function AdminPage() {
           </div>
         </div>
 
-        {/* Nav mobile */}
-        <div className="md:hidden grid grid-cols-2 gap-3">
-          {[
-            { href: "/admin/visitas", label: "Ver todas as visitas" },
-            { href: "/admin/usuarios", label: "Gerenciar usuários" },
-            { href: "/admin/relatorios", label: "Exportar relatórios" },
-          ].map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="bg-white border border-gray-100 rounded-2xl p-4 text-sm font-medium text-gray-700 hover:border-[#00AEEF] hover:text-[#00AEEF] transition shadow-sm"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
       </main>
+
+      <AdminBottomNav />
     </div>
   );
 }
