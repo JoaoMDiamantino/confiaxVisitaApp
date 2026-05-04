@@ -45,6 +45,8 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-[#f0f4f8]">
       <Suspense>
         <SuccessToast param="agendado" message="Visita agendada com sucesso!" />
+        <SuccessToast param="editado" message="Visita atualizada com sucesso!" />
+        <SuccessToast param="cancelado" message="Visita cancelada." />
       </Suspense>
 
       {/* Gradient hero header */}

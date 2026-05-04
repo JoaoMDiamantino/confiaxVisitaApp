@@ -35,12 +35,20 @@ export default function VisitaCard({ visita }: Props) {
         <p className="text-xs text-gray-400 mb-3">{formatDate(visita.scheduled_at)}</p>
 
         {!isEmAndamento && (
-          <Link
-            href={`/visitas/${visita.id}/checkin`}
-            className="block text-center bg-[#00AEEF] hover:bg-[#0084c7] active:scale-[0.98] text-white text-sm font-medium rounded-xl py-2.5 transition"
-          >
-            Fazer check-in
-          </Link>
+          <>
+            <Link
+              href={`/visitas/${visita.id}/checkin`}
+              className="block text-center bg-[#00AEEF] hover:bg-[#0084c7] active:scale-[0.98] text-white text-sm font-medium rounded-xl py-2.5 transition"
+            >
+              Fazer check-in
+            </Link>
+            <Link
+              href={`/visitas/${visita.id}/editar`}
+              className="block text-center text-[#00AEEF] text-xs font-medium rounded-xl py-2 mt-2 hover:bg-sky-50 transition"
+            >
+              Editar visita
+            </Link>
+          </>
         )}
         {isEmAndamento && (
           <Link
