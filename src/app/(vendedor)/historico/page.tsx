@@ -17,7 +17,7 @@ export default async function HistoricoPage() {
       .eq("user_id", user.id)
       .eq("status", "concluida")
       .order("scheduled_at", { ascending: false }),
-    supabase.from("imobiliarias").select("id, name").order("name"),
+    supabase.from("imobiliarias").select("id, name").order("name").limit(5000),
   ]);
 
   return (

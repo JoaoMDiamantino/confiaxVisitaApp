@@ -24,6 +24,7 @@ export default function AgendarVisitaPage() {
       .from("imobiliarias")
       .select("*")
       .order("name")
+      .limit(5000)
       .then(({ data }) => setImobiliarias(data ?? []));
   }, [supabase]);
 
