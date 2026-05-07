@@ -64,7 +64,7 @@ export default function HistoricoFiltros({ visitas, imobiliarias }: Props) {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#00AEEF] focus:bg-white transition"
+              className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary focus:bg-white transition"
             />
           </div>
           <div>
@@ -74,7 +74,7 @@ export default function HistoricoFiltros({ visitas, imobiliarias }: Props) {
               value={endDate}
               min={startDate || undefined}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#00AEEF] focus:bg-white transition"
+              className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary focus:bg-white transition"
             />
           </div>
         </div>
@@ -106,7 +106,7 @@ export default function HistoricoFiltros({ visitas, imobiliarias }: Props) {
           {hasFilters && (
             <button
               onClick={clearFilters}
-              className="text-xs text-[#00AEEF] font-semibold mt-2 hover:underline"
+              className="text-xs text-primary font-semibold mt-2 hover:underline"
             >
               Limpar filtros →
             </button>

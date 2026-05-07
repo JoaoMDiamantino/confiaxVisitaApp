@@ -1,5 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createAdminClient, createServerClient } from "@/lib/supabase/server";
+
+const CreateUsuarioSchema = z.object({
+  name: z.string().min(2).max(100),
+  email: z.string().email(),
+  password: z.string().min(8),
+  role: z.enum(["admin", "vendedor"]),
+});
+
+const PatchUsuarioSchema = z.object({
+  userId: z.string().uuid(),
+  active: z.boolean(),
+});
 
 export async function POST(req: NextRequest) {
   // Verifica que o chamador é um admin autenticado
@@ -17,11 +30,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
 
-  const { name, email, password, role } = await req.json();
-
-  if (!name || !email || !password || !role) {
-    return NextResponse.json({ error: "Campos obrigatórios ausentes." }, { status: 400 });
+  const parsed = CreateUsuarioSchema.safeParse(await req.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Dados inválidos.", details: parsed.error.flatten().fieldErrors }, { status: 400 });
   }
+  const { name, email, password, role } = parsed.data;
 
   const adminClient = createAdminClient();
 
@@ -46,8 +59,11 @@ export async function POST(req: NextRequest) {
   });
 
   if (insertError) {
-    // Rollback: remove o usuário do Auth se o perfil falhou
-    await adminClient.auth.admin.deleteUser(newUser.user.id);
+    try {
+      await adminClient.auth.admin.deleteUser(newUser.user.id);
+    } catch (rollbackErr) {
+      console.error("Rollback falhou — usuário órfão no Auth:", { userId: newUser.user.id, error: rollbackErr });
+    }
     return NextResponse.json({ error: "Erro ao salvar perfil do usuário." }, { status: 500 });
   }
 
@@ -69,11 +85,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
 
-  const { userId, active } = await req.json();
-
-  if (!userId || typeof active !== "boolean") {
-    return NextResponse.json({ error: "Campos obrigatórios ausentes." }, { status: 400 });
+  const parsed2 = PatchUsuarioSchema.safeParse(await req.json());
+  if (!parsed2.success) {
+    return NextResponse.json({ error: "Dados inválidos.", details: parsed2.error.flatten().fieldErrors }, { status: 400 });
   }
+  const { userId, active } = parsed2.data;
 
   const adminClient = createAdminClient();
   const { error: updateError } = await adminClient

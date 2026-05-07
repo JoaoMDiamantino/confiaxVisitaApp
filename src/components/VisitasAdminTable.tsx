@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { Visita } from "@/types";
 import { formatDate, formatDuration } from "@/lib/utils";
 import VisitaDetailModal from "@/components/VisitaDetailModal";
@@ -41,13 +41,13 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
   }
   if (dir === "asc") {
     return (
-      <svg className="w-3 h-3 ml-1 inline-block" style={{ color: "#00AEEF" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+      <svg className="w-3 h-3 ml-1 inline-block text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5M5 12l7-7 7 7" />
       </svg>
     );
   }
   return (
-    <svg className="w-3 h-3 ml-1 inline-block" style={{ color: "#00AEEF" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+    <svg className="w-3 h-3 ml-1 inline-block text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M19 12l-7 7-7-7" />
     </svg>
   );
@@ -59,6 +59,7 @@ interface Props {
 
 export default function VisitasAdminTable({ visitas }: Props) {
   const [selected, setSelected] = useState<Visita | null>(null);
+  const [page, setPage] = useState(1);
   const [filterGestor, setFilterGestor] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterImob, setFilterImob] = useState("");
@@ -138,6 +139,14 @@ export default function VisitasAdminTable({ visitas }: Props) {
     }
   }
 
+  const PAGE_SIZE = 50;
+  const totalPages = Math.max(1, Math.ceil(displayed.length / PAGE_SIZE));
+  const paged = displayed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterGestor, filterStatus, filterImob, filterDateFrom, filterDateTo, sortKey, sortDir]);
+
   const hasFilter = filterGestor || filterStatus || filterImob || filterDateFrom || filterDateTo;
 
   function clearFilters() {
@@ -146,9 +155,10 @@ export default function VisitasAdminTable({ visitas }: Props) {
     setFilterImob("");
     setFilterDateFrom("");
     setFilterDateTo("");
+    setPage(1);
   }
 
-  const selectCls = "w-full text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#00AEEF]/30 focus:border-[#00AEEF]";
+  const selectCls = "w-full text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary";
 
   return (
     <>
@@ -210,11 +220,12 @@ export default function VisitasAdminTable({ visitas }: Props) {
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
           <p className="text-xs text-gray-400">
             <span className="font-semibold text-gray-600">{displayed.length}</span> de {visitas.length} visitas
+            {totalPages > 1 && ` · pág. ${page}/${totalPages}`}
           </p>
           {hasFilter && (
             <button
               onClick={clearFilters}
-              className="text-xs font-medium text-[#00AEEF] hover:text-[#0084c7] transition"
+              className="text-xs font-medium text-primary hover:text-primary-dark transition"
             >
               Limpar filtros
             </button>
@@ -241,7 +252,7 @@ export default function VisitasAdminTable({ visitas }: Props) {
             </tr>
           </thead>
           <tbody>
-            {displayed.map((v) => (
+            {paged.map((v) => (
               <tr
                 key={v.id}
                 className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -282,6 +293,26 @@ export default function VisitasAdminTable({ visitas }: Props) {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-3 flex items-center justify-center gap-3">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="text-xs font-medium text-gray-500 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg border border-gray-200 bg-white transition"
+          >
+            ← Anterior
+          </button>
+          <span className="text-xs text-gray-500">{page} / {totalPages}</span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="text-xs font-medium text-gray-500 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg border border-gray-200 bg-white transition"
+          >
+            Próxima →
+          </button>
+        </div>
+      )}
 
       <VisitaDetailModal visita={selected} onClose={() => setSelected(null)} />
     </>

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Visita } from "@/types";
 import { formatDate, formatDuration } from "@/lib/utils";
 
 export default function RelatoriosClient() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [inicio, setInicio] = useState("");
   const [fim, setFim] = useState("");
   const [loading, setLoading] = useState(false);
@@ -105,7 +105,7 @@ export default function RelatoriosClient() {
               type="date"
               value={inicio}
               onChange={(e) => setInicio(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#00AEEF] focus:ring-2 focus:ring-[#00AEEF]/20"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <div className="flex-1">
@@ -114,7 +114,7 @@ export default function RelatoriosClient() {
               type="date"
               value={fim}
               onChange={(e) => setFim(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#00AEEF] focus:ring-2 focus:ring-[#00AEEF]/20"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </div>
         </div>
@@ -128,14 +128,14 @@ export default function RelatoriosClient() {
         <button
           onClick={exportCSV}
           disabled={loading}
-          className="flex-1 border border-[#00AEEF] text-[#00AEEF] text-sm font-medium rounded-lg py-2.5 hover:bg-[#00AEEF]/5 disabled:opacity-60 transition"
+          className="flex-1 border border-primary text-primary text-sm font-medium rounded-lg py-2.5 hover:bg-primary/5 disabled:opacity-60 transition"
         >
           {loading ? "Gerando..." : "Exportar CSV"}
         </button>
         <button
           onClick={exportPDF}
           disabled={loading}
-          className="flex-1 bg-[#00AEEF] text-white text-sm font-medium rounded-lg py-2.5 hover:bg-[#0099d4] disabled:opacity-60 transition"
+          className="flex-1 bg-primary text-white text-sm font-medium rounded-lg py-2.5 hover:bg-[#0099d4] disabled:opacity-60 transition"
         >
           {loading ? "Gerando..." : "Exportar PDF"}
         </button>

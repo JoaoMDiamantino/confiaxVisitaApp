@@ -19,19 +19,24 @@ export default function CheckinPage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled) return;
       if (!user) { router.push("/login"); return; }
 
-      const { data } = await supabase
+      const { data, error: loadError } = await supabase
         .from("visitas")
         .select("*, imobiliarias(id, name, address)")
         .eq("id", id)
         .eq("user_id", user.id)
         .single();
 
+      if (cancelled) return;
+      if (loadError) { setFetchError("Erro ao carregar a visita."); return; }
       if (!data || data.status !== "agendada") {
         router.push("/dashboard");
         return;
@@ -40,7 +45,15 @@ export default function CheckinPage() {
       setVisita(data as Visita);
     }
     load();
+    return () => { cancelled = true; };
   }, [id, supabase, router]);
+
+  useEffect(() => {
+    if (!file) { setPreview(null); return; }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0];
@@ -50,15 +63,15 @@ export default function CheckinPage() {
       setError("A foto não pode ultrapassar 10 MB.");
       return;
     }
-    if (!selected.type.startsWith("image/")) {
-      setError("Apenas imagens são permitidas.");
+    const ext = selected.name.split(".").pop()?.toLowerCase() ?? "";
+    const ALLOWED_EXTS = ["jpg", "jpeg", "png", "webp", "heic", "heif"];
+    if (!selected.type.startsWith("image/") || !ALLOWED_EXTS.includes(ext)) {
+      setError("Apenas imagens são permitidas (JPG, PNG, WEBP, HEIC).");
       return;
     }
 
-    if (preview) URL.revokeObjectURL(preview);
     setError(null);
     setFile(selected);
-    setPreview(URL.createObjectURL(selected));
   }
 
   async function handleCheckin() {
@@ -108,12 +121,12 @@ export default function CheckinPage() {
   const imob = visita?.imobiliarias as { name: string; address: string | null } | undefined;
 
   return (
-    <div className="min-h-screen bg-[#f0f4f8]">
+    <div className="min-h-screen bg-brand-bg">
       {/* App bar */}
       <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
         <Link
           href="/dashboard"
-          className="flex items-center gap-1.5 text-[#00AEEF] text-sm font-medium hover:text-[#0084c7] transition"
+          className="flex items-center gap-1.5 text-primary text-sm font-medium hover:text-primary-dark transition"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -132,9 +145,13 @@ export default function CheckinPage() {
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
         {/* Visit info card */}
-        {visita ? (
+        {fetchError ? (
+          <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3 text-sm text-red-700">
+            {fetchError}
+          </div>
+        ) : visita ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex">
-            <div className="w-[3px] flex-shrink-0 bg-[#00AEEF]" />
+            <div className="w-[3px] flex-shrink-0 bg-primary" />
             <div className="flex-1 p-4">
               <p className="text-sm font-semibold text-gray-900">{imob?.name}</p>
               {imob?.address && <p className="text-xs text-gray-400 mt-0.5">{imob.address}</p>}
@@ -154,7 +171,7 @@ export default function CheckinPage() {
 
         {/* Photo upload card */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="h-[3px] bg-[#00AEEF]" />
+          <div className="h-[3px] bg-primary" />
           <div className="p-5 space-y-4">
             <div className="flex items-center gap-2">
               <p className="text-sm font-semibold text-gray-900">Foto da visita</p>
@@ -173,9 +190,8 @@ export default function CheckinPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
                 <button
                   onClick={() => {
-                    URL.revokeObjectURL(preview);
-                    setPreview(null);
                     setFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
                   }}
                   aria-label="Remover foto"
                   className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full w-11 h-11 flex items-center justify-center transition"
@@ -191,7 +207,7 @@ export default function CheckinPage() {
             ) : (
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-gray-200 hover:border-[#00AEEF] rounded-2xl py-10 flex flex-col items-center gap-3 text-gray-400 hover:text-[#00AEEF] transition group"
+                className="w-full border-2 border-dashed border-gray-200 hover:border-[#00AEEF] rounded-2xl py-10 flex flex-col items-center gap-3 text-gray-400 hover:text-primary transition group"
               >
                 <div className="w-14 h-14 bg-gray-50 group-hover:bg-sky-50 rounded-2xl flex items-center justify-center transition">
                   <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -229,8 +245,7 @@ export default function CheckinPage() {
         <button
           onClick={handleCheckin}
           disabled={!file || uploading}
-          className="w-full rounded-xl py-3.5 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-40"
-          style={{ background: (!file || uploading) ? "#7dd3f0" : "linear-gradient(135deg, #003d6b 0%, #00AEEF 100%)" }}
+          className={`w-full rounded-xl py-3.5 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-40 ${(!file || uploading) ? "bg-gradient-brand-muted" : "bg-gradient-brand"}`}
         >
           {uploading ? "Registrando check-in..." : "Confirmar check-in"}
         </button>

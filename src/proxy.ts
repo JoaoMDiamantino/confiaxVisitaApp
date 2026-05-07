@@ -1,7 +1,16 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
+function parseJwtClaims(token: string): Record<string, unknown> | null {
+  try {
+    const seg = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(Buffer.from(seg, "base64").toString());
+  } catch {
+    return null;
+  }
+}
+
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -38,13 +47,36 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // Proteção das rotas admin por role
-  if (user && pathname.startsWith("/admin")) {
+  // Lê role e active do JWT (sem round-trip ao banco).
+  // Requer custom_access_token_hook ativo em: Supabase Dashboard → Auth Hooks.
+  // Enquanto o hook não estiver ativo, cai no fallback DB abaixo.
+  let jwtRole: string | undefined;
+  let jwtActive: boolean | undefined;
+  let claimsFromJwt = false;
+
+  if (user) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const claims = session?.access_token ? parseJwtClaims(session.access_token) : null;
+    if (claims?.user_role !== undefined) {
+      jwtRole = claims.user_role as string;
+      jwtActive = claims.user_active as boolean;
+      claimsFromJwt = true;
+    }
+  }
+
+  async function getProfile() {
+    if (claimsFromJwt) return { role: jwtRole, active: jwtActive };
     const { data: profile } = await supabase
       .from("users")
       .select("role, active")
-      .eq("id", user.id)
+      .eq("id", user!.id)
       .single();
+    return profile ?? { role: undefined, active: undefined };
+  }
+
+  // Proteção das rotas admin por role
+  if (user && pathname.startsWith("/admin")) {
+    const profile = await getProfile();
 
     if (!profile?.active) {
       await supabase.auth.signOut();
@@ -58,11 +90,7 @@ export async function middleware(request: NextRequest) {
 
   // Proteção das rotas do vendedor por role
   if (user && (pathname.startsWith("/dashboard") || pathname.startsWith("/visitas"))) {
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role, active")
-      .eq("id", user.id)
-      .single();
+    const profile = await getProfile();
 
     if (!profile?.active) {
       await supabase.auth.signOut();

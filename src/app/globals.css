@@ -1,13 +1,24 @@
 @import "tailwindcss";
 
-:root {
+@theme {
   --color-primary: #00AEEF;
   --color-primary-dark: #0084c7;
+  --color-brand-dark: #003d6b;
+  --color-brand-bg: #f0f4f8;
 }
 
 @layer base {
   body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .bg-gradient-brand {
+    background: linear-gradient(135deg, #003d6b 0%, #00AEEF 100%);
+  }
+  .bg-gradient-brand-muted {
+    background: #7dd3f0;
   }
 }

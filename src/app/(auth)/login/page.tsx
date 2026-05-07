@@ -105,7 +105,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none focus:border-[#00AEEF] focus:bg-white transition placeholder:text-gray-300"
+                className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none focus:border-primary focus:bg-white transition placeholder:text-gray-300"
                 placeholder="seu@email.com"
               />
             </div>
@@ -122,7 +122,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-4 py-3 pr-11 text-sm text-gray-900 outline-none focus:border-[#00AEEF] focus:bg-white transition placeholder:text-gray-300"
+                  className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-4 py-3 pr-11 text-sm text-gray-900 outline-none focus:border-primary focus:bg-white transition placeholder:text-gray-300"
                   placeholder="••••••••"
                 />
                 <button
@@ -157,8 +157,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl py-3.5 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-60 mt-2"
-              style={{ background: loading ? "#7dd3f0" : "linear-gradient(135deg, #003d6b 0%, #00AEEF 100%)" }}
+              className={`w-full rounded-xl py-3.5 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-60 mt-2 ${loading ? "bg-gradient-brand-muted" : "bg-gradient-brand"}`}
             >
               {loading ? "Entrando..." : "Entrar →"}
             </button>

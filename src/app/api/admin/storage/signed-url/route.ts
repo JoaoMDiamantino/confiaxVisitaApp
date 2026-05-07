@@ -11,6 +11,9 @@ export async function GET(request: NextRequest) {
 
   const path = request.nextUrl.searchParams.get("path");
   if (!path) return NextResponse.json({ error: "Missing path" }, { status: 400 });
+  if (path.includes("..") || path.startsWith("/") || path.includes("\0")) {
+    return NextResponse.json({ error: "Invalid path" }, { status: 400 });
+  }
 
   const admin = createAdminClient();
   const { data, error } = await admin.storage.from("visita-fotos").createSignedUrl(path, 3600);

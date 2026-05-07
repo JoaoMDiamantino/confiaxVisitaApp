@@ -19,19 +19,24 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled) return;
       if (!user) { router.push("/login"); return; }
 
-      const { data } = await supabase
+      const { data, error: loadError } = await supabase
         .from("visitas")
         .select("*, imobiliarias(id, name, address)")
         .eq("id", id)
         .eq("user_id", user.id)
         .single();
 
+      if (cancelled) return;
+      if (loadError) { setFetchError("Erro ao carregar a visita."); return; }
       if (!data || data.status !== "em_andamento") {
         router.push("/dashboard");
         return;
@@ -40,6 +45,7 @@ export default function CheckoutPage() {
       setVisita(data as Visita);
     }
     load();
+    return () => { cancelled = true; };
   }, [id, supabase, router]);
 
   async function handleCheckout(e: React.FormEvent) {
@@ -111,7 +117,11 @@ export default function CheckoutPage() {
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
         {/* Visit info card */}
-        {visita ? (
+        {fetchError ? (
+          <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3 text-sm text-red-700">
+            {fetchError}
+          </div>
+        ) : visita ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex">
             <div className="w-[3px] flex-shrink-0 bg-amber-400" />
             <div className="flex-1 p-4">

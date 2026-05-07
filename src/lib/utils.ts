@@ -1,4 +1,4 @@
-export function formatDate(dateStr: string) {
+export function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
   const datePart = new Intl.DateTimeFormat('pt-BR', {
     timeZone: 'America/Sao_Paulo',
@@ -15,7 +15,7 @@ export function formatDate(dateStr: string) {
   return `${datePart} às ${timePart}`;
 }
 
-export function formatDuration(minutes: number) {
+export function formatDuration(minutes: number): string {
   if (minutes < 60) return `${minutes} min`;
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;

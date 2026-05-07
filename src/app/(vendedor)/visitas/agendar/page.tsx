@@ -64,12 +64,12 @@ export default function AgendarVisitaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f0f4f8]">
+    <div className="min-h-screen bg-brand-bg">
       {/* App bar */}
       <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
         <Link
           href="/dashboard"
-          className="flex items-center gap-1.5 text-[#00AEEF] text-sm font-medium hover:text-[#0084c7] transition"
+          className="flex items-center gap-1.5 text-primary text-sm font-medium hover:text-primary-dark transition"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -83,7 +83,7 @@ export default function AgendarVisitaPage() {
 
       <main className="max-w-lg mx-auto px-4 py-6">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="h-[3px] bg-[#00AEEF]" />
+          <div className="h-[3px] bg-primary" />
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
 
             <div>
@@ -110,7 +110,7 @@ export default function AgendarVisitaPage() {
                   value={data}
                   min={new Date().toISOString().split("T")[0]}
                   onChange={(e) => setData(e.target.value)}
-                  className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none focus:border-[#00AEEF] focus:bg-white transition"
+                  className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none focus:border-primary focus:bg-white transition"
                 />
               </div>
 
@@ -123,7 +123,7 @@ export default function AgendarVisitaPage() {
                   required
                   value={hora}
                   onChange={(e) => setHora(e.target.value)}
-                  className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none focus:border-[#00AEEF] focus:bg-white transition"
+                  className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none focus:border-primary focus:bg-white transition"
                 />
               </div>
             </div>
@@ -140,8 +140,7 @@ export default function AgendarVisitaPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl py-3.5 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-60"
-              style={{ background: loading ? "#7dd3f0" : "linear-gradient(135deg, #003d6b 0%, #00AEEF 100%)" }}
+              className={`w-full rounded-xl py-3.5 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-60 ${loading ? "bg-gradient-brand-muted" : "bg-gradient-brand"}`}
             >
               {loading ? "Agendando..." : "Agendar visita"}
             </button>
