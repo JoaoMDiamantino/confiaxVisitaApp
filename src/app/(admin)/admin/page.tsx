@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
 import { createServerClient } from "@/lib/supabase/server";
 import { formatDuration } from "@/lib/utils";
 import LogoutButton from "@/components/LogoutButton";
 import { AdminDesktopNav, AdminBottomNav } from "@/components/AdminNav";
 import ResumoGestorTable from "@/components/ResumoGestorTable";
+import GraficoLinhaTempo, { type VisitaParaGrafico, type GestorParaGrafico } from "@/components/GraficoLinhaTempo";
 
 export default async function AdminPage() {
   const supabase = await createServerClient();
@@ -21,12 +21,28 @@ export default async function AdminPage() {
 
   const now = new Date();
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const dozemesesAtras = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).toISOString();
 
   const { data: visitasMes } = await supabase
     .from("visitas")
     .select("id, duration_minutes, rating, user_id, users(name)")
     .eq("status", "concluida")
     .gte("checkout_at", firstOfMonth);
+
+  const [{ data: visitasHistorico }, { data: gestores }] = await Promise.all([
+    supabase
+      .from("visitas")
+      .select("id, user_id, checkout_at, duration_minutes, rating")
+      .eq("status", "concluida")
+      .gte("checkout_at", dozemesesAtras)
+      .order("checkout_at", { ascending: true }),
+    supabase
+      .from("users")
+      .select("id, name")
+      .eq("role", "vendedor")
+      .eq("active", true)
+      .order("name"),
+  ]);
 
   const totalVisitas = visitasMes?.length ?? 0;
   const notaMedia = totalVisitas > 0
@@ -126,6 +142,15 @@ export default async function AdminPage() {
         <div>
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Resumo por gestor</p>
           <ResumoGestorTable rows={Object.values(porVendedor ?? {})} />
+        </div>
+
+        {/* Linha do tempo */}
+        <div>
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Linha do tempo</p>
+          <GraficoLinhaTempo
+            visitas={(visitasHistorico ?? []) as VisitaParaGrafico[]}
+            gestores={(gestores ?? []) as GestorParaGrafico[]}
+          />
         </div>
 
       </main>
