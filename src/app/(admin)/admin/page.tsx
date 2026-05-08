@@ -5,6 +5,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { formatDuration } from "@/lib/utils";
 import LogoutButton from "@/components/LogoutButton";
 import { AdminDesktopNav, AdminBottomNav } from "@/components/AdminNav";
+import ResumoGestorTable from "@/components/ResumoGestorTable";
 
 export default async function AdminPage() {
   const supabase = await createServerClient();
@@ -35,11 +36,12 @@ export default async function AdminPage() {
     ? Math.round(visitasMes!.reduce((acc, v) => acc + (v.duration_minutes ?? 0), 0) / totalVisitas)
     : null;
 
-  const porVendedor = visitasMes?.reduce<Record<string, { id: string; name: string; total: number; somaNotas: number }>>((acc, v) => {
+  const porVendedor = visitasMes?.reduce<Record<string, { id: string; name: string; total: number; somaNotas: number; somaDuracao: number }>>((acc, v) => {
     const nome = (v.users as unknown as { name: string } | null)?.name ?? "—";
-    if (!acc[v.user_id]) acc[v.user_id] = { id: v.user_id, name: nome, total: 0, somaNotas: 0 };
+    if (!acc[v.user_id]) acc[v.user_id] = { id: v.user_id, name: nome, total: 0, somaNotas: 0, somaDuracao: 0 };
     acc[v.user_id].total++;
     acc[v.user_id].somaNotas += v.rating ?? 0;
+    acc[v.user_id].somaDuracao += v.duration_minutes ?? 0;
     return acc;
   }, {});
 
@@ -123,49 +125,7 @@ export default async function AdminPage() {
         {/* Resumo por gestor */}
         <div>
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Resumo por gestor</p>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 text-left">
-                  <th className="px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide">Gestor</th>
-                  <th className="px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide">Visitas</th>
-                  <th className="px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide">Nota média</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.values(porVendedor ?? {}).map((v) => (
-                  <tr key={v.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#00AEEF]/10 flex items-center justify-center text-[#00AEEF] text-xs font-bold flex-shrink-0">
-                          {v.name[0]?.toUpperCase()}
-                        </div>
-                        <span className="font-medium text-gray-900">{v.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className="font-semibold text-gray-900 tabular-nums">{v.total}</span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-amber-400 text-xs">★</span>
-                        <span className="font-medium text-gray-700 tabular-nums">
-                          {v.total > 0 ? (v.somaNotas / v.total).toFixed(1) : "—"}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {Object.keys(porVendedor ?? {}).length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="px-5 py-8 text-center text-sm text-gray-400">
-                      Nenhuma visita concluída este mês.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <ResumoGestorTable rows={Object.values(porVendedor ?? {})} />
         </div>
 
       </main>
