@@ -15,6 +15,17 @@ export function formatDate(dateStr: string): string {
   return `${datePart} às ${timePart}`;
 }
 
+export function getEffectiveStatus(visita: { status: string; scheduled_at: string }): string {
+  if (visita.status !== "agendada") return visita.status;
+  const now = new Date();
+  const scheduled = new Date(visita.scheduled_at);
+  const nowSP       = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const scheduledSP = new Date(scheduled.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const nowDay       = new Date(nowSP.getFullYear(), nowSP.getMonth(), nowSP.getDate());
+  const scheduledDay = new Date(scheduledSP.getFullYear(), scheduledSP.getMonth(), scheduledSP.getDate());
+  return scheduledDay < nowDay ? "atrasada" : "agendada";
+}
+
 export function formatDuration(minutes: number): string {
   if (minutes < 60) return `${minutes} min`;
   const h = Math.floor(minutes / 60);

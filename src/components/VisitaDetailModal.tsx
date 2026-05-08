@@ -2,18 +2,20 @@
 
 import { useEffect, useState } from "react";
 import type { Visita } from "@/types";
-import { formatDate, formatDuration } from "@/lib/utils";
+import { formatDate, formatDuration, getEffectiveStatus } from "@/lib/utils";
 
 const STATUS_LABEL: Record<string, string> = {
   agendada: "Agendada",
   em_andamento: "Em andamento",
   concluida: "Concluída",
+  atrasada: "Atrasada",
 };
 
 const STATUS_COLOR: Record<string, string> = {
   agendada: "bg-blue-50 text-blue-600",
   em_andamento: "bg-amber-50 text-amber-600",
   concluida: "bg-emerald-50 text-emerald-600",
+  atrasada: "bg-red-50 text-red-600",
 };
 
 interface Props {
@@ -45,6 +47,7 @@ export default function VisitaDetailModal({ visita, onClose }: Props) {
 
   const gestorName = (visita.users as { name: string } | undefined)?.name ?? "—";
   const imobName = (visita.imobiliarias as { name: string } | undefined)?.name ?? "—";
+  const effectiveStatus = getEffectiveStatus(visita);
 
   return (
     <div
@@ -62,8 +65,8 @@ export default function VisitaDetailModal({ visita, onClose }: Props) {
             <h2 className="text-base font-bold text-gray-900">{gestorName}</h2>
           </div>
           <div className="flex items-center gap-3">
-            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[visita.status]}`}>
-              {STATUS_LABEL[visita.status]}
+            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[effectiveStatus]}`}>
+              {STATUS_LABEL[effectiveStatus]}
             </span>
             <button
               onClick={onClose}

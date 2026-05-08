@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import type { Visita } from "@/types";
-import { formatDate, formatDuration } from "@/lib/utils";
+import { formatDate, formatDuration, getEffectiveStatus } from "@/lib/utils";
 import VisitaDetailModal from "@/components/VisitaDetailModal";
 import Combobox from "@/components/Combobox";
 
@@ -10,12 +10,14 @@ const STATUS_LABEL: Record<string, string> = {
   agendada: "Agendada",
   em_andamento: "Em andamento",
   concluida: "Concluída",
+  atrasada: "Atrasada",
 };
 
 const STATUS_COLOR: Record<string, string> = {
   agendada: "bg-blue-50 text-blue-600",
   em_andamento: "bg-amber-50 text-amber-600",
   concluida: "bg-emerald-50 text-emerald-600",
+  atrasada: "bg-red-50 text-red-600",
 };
 
 type SortKey = "gestor" | "imobiliaria" | "scheduled_at" | "checkin_at" | "duration_minutes" | "rating" | "status";
@@ -90,7 +92,7 @@ export default function VisitasAdminTable({ visitas }: Props) {
     let result = visitas;
 
     if (filterGestor) result = result.filter((v) => v.user_id === filterGestor);
-    if (filterStatus) result = result.filter((v) => v.status === filterStatus);
+    if (filterStatus) result = result.filter((v) => getEffectiveStatus(v) === filterStatus);
     if (filterImob)   result = result.filter((v) => v.imobiliaria_id === filterImob);
     if (filterDateFrom) {
       const from = new Date(filterDateFrom + "T00:00:00");
@@ -180,6 +182,7 @@ export default function VisitasAdminTable({ visitas }: Props) {
             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className={selectCls}>
               <option value="">Todos</option>
               <option value="agendada">Agendada</option>
+              <option value="atrasada">Atrasada</option>
               <option value="em_andamento">Em andamento</option>
               <option value="concluida">Concluída</option>
             </select>
@@ -277,8 +280,8 @@ export default function VisitasAdminTable({ visitas }: Props) {
                   </span>
                 </td>
                 <td className="px-5 py-3.5">
-                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[v.status]}`}>
-                    {STATUS_LABEL[v.status]}
+                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[getEffectiveStatus(v)]}`}>
+                    {STATUS_LABEL[getEffectiveStatus(v)]}
                   </span>
                 </td>
               </tr>
