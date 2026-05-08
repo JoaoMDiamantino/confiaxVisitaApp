@@ -27,7 +27,7 @@ export default function HistoricoList({ visitas }: Props) {
         return (
           <div key={visita.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex">
             <div className="w-[3px] flex-shrink-0 bg-emerald-400" />
-            <div className="flex-1 p-4">
+            <div className="flex-1 min-w-0 p-4">
               <div className="flex items-start justify-between mb-1">
                 <p className="text-sm font-semibold text-gray-900 flex-1 min-w-0 pr-2 truncate">
                   {imob?.name}

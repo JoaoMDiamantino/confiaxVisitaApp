@@ -29,7 +29,7 @@ export default function VisitaCard({ visita }: Props) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex">
       <div className={`w-[3px] flex-shrink-0 ${borderColor}`} />
-      <div className="flex-1 p-4">
+      <div className="flex-1 min-w-0 p-4">
         <div className="flex items-start justify-between mb-1">
           <p className="text-sm font-semibold text-gray-900 leading-tight flex-1 min-w-0 pr-2 truncate">
             {imob?.name}
