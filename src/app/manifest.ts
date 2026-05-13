@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'ConFiaX Visita',
+    name: 'Confiax Visita',
     short_name: 'Visita',
     description: 'Gestão de visitas comerciais às imobiliárias parceiras',
     start_url: '/',

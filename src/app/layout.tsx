@@ -10,12 +10,12 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "ConFiaX Visita",
+  title: "Confiax Visita",
   description: "Gestão de visitas comerciais às imobiliárias parceiras",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "ConFiaX Visita",
+    title: "Confiax Visita",
   },
   icons: {
     icon: [{ url: "/favicon-32.png", sizes: "32x32", type: "image/png" }],
