@@ -12,7 +12,6 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "ConFiaX Visita",
   description: "Gestão de visitas comerciais às imobiliárias parceiras",
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
