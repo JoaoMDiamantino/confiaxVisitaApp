@@ -1,12 +1,23 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 const inter = Inter({ subsets: ["latin"] });
+
+export const viewport: Viewport = {
+  themeColor: "#00AEEF",
+};
 
 export const metadata: Metadata = {
   title: "ConFiaX Visita",
   description: "Gestão de visitas comerciais às imobiliárias parceiras",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "ConFiaX Visita",
+  },
   icons: {
     icon: [{ url: "/favicon-32.png", sizes: "32x32", type: "image/png" }],
     apple: [{ url: "/logo-icon-192.png", sizes: "192x192", type: "image/png" }],
@@ -21,7 +32,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <ServiceWorkerRegister />
+        {children}
+      </body>
     </html>
   );
 }
