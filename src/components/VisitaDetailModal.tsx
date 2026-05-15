@@ -46,7 +46,8 @@ export default function VisitaDetailModal({ visita, onClose }: Props) {
   if (!visita) return null;
 
   const gestorName = (visita.users as { name: string } | undefined)?.name ?? "—";
-  const imobName = (visita.imobiliarias as { name: string } | undefined)?.name ?? "—";
+  const imobName = (visita.imobiliarias as { name: string } | undefined)?.name ?? (visita.prospectos as { name: string } | undefined)?.name ?? "—";
+  const isCaptacao = !!visita.prospecto_id;
   const effectiveStatus = getEffectiveStatus(visita);
 
   return (
@@ -61,7 +62,12 @@ export default function VisitaDetailModal({ visita, onClose }: Props) {
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100">
           <div>
-            <p className="text-xs text-gray-400 mb-0.5">{imobName}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-xs text-gray-400">{imobName}</p>
+              {isCaptacao && (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Captação</span>
+              )}
+            </div>
             <h2 className="text-base font-bold text-gray-900">{gestorName}</h2>
           </div>
           <div className="flex items-center gap-3">

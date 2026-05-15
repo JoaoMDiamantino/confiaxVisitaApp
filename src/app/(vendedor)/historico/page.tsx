@@ -14,7 +14,7 @@ export default async function HistoricoPage() {
   const [visitasResult, imobiliariasResult] = await Promise.all([
     supabase
       .from("visitas")
-      .select("*, imobiliarias(id, name, address)")
+      .select("*, imobiliarias(id, name, address), prospectos(id, name)")
       .eq("user_id", user.id)
       .eq("status", "concluida")
       .order("scheduled_at", { ascending: false }),

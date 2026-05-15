@@ -116,14 +116,22 @@ export default function HistoricoFiltros({ visitas, imobiliarias }: Props) {
         <div className="space-y-3">
           {filtered.map((visita) => {
             const imob = visita.imobiliarias as { name: string } | undefined;
+            const prosp = visita.prospectos as { name: string } | undefined;
+            const entityName = imob?.name ?? prosp?.name ?? "—";
+            const isCaptacao = !!visita.prospecto_id;
             return (
               <div key={visita.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex">
                 <div className="w-[3px] flex-shrink-0 bg-emerald-400" />
                 <div className="flex-1 p-4">
                   <div className="flex items-start justify-between mb-1">
-                    <p className="text-sm font-semibold text-gray-900 flex-1 min-w-0 pr-2 truncate">
-                      {imob?.name}
-                    </p>
+                    <div className="flex-1 min-w-0 pr-2">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{entityName}</p>
+                      {isCaptacao && (
+                        <span className="inline-block mt-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+                          Captação
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-0.5 flex-shrink-0">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <span key={i} className={`text-xs ${i < (visita.rating ?? 0) ? "text-amber-400" : "text-gray-200"}`}>

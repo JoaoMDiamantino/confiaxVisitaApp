@@ -17,6 +17,9 @@ export default function EditarVisitaPage() {
   const [saving, setSaving] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCaptacao, setIsCaptacao] = useState(false);
+  const [prospectoId, setProspectoId] = useState<string | null>(null);
+  const [nomeEmpresa, setNomeEmpresa] = useState("");
   const [imobiliarias, setImobiliarias] = useState<Imobiliaria[]>([]);
   const [imobiliariaId, setImobiliariaId] = useState("");
   const [data, setData] = useState("");
@@ -41,7 +44,19 @@ export default function EditarVisitaPage() {
       if (!visita) { router.push("/dashboard"); return; }
 
       setImobiliarias(imobs ?? []);
-      setImobiliariaId(visita.imobiliaria_id);
+
+      if (visita.prospecto_id) {
+        setIsCaptacao(true);
+        setProspectoId(visita.prospecto_id);
+        const { data: prosp } = await supabase
+          .from("prospectos")
+          .select("name")
+          .eq("id", visita.prospecto_id)
+          .single();
+        setNomeEmpresa(prosp?.name ?? "");
+      } else {
+        setImobiliariaId(visita.imobiliaria_id ?? "");
+      }
 
       const scheduledDate = new Date(visita.scheduled_at);
       setData(new Intl.DateTimeFormat("sv-SE", {
@@ -62,11 +77,6 @@ export default function EditarVisitaPage() {
     e.preventDefault();
     setError(null);
 
-    if (!imobiliariaId) {
-      setError("Selecione uma imobiliária.");
-      return;
-    }
-
     const scheduledAt = new Date(`${data}T${hora}`);
     if (scheduledAt < new Date()) {
       setError("A data da visita não pode ser no passado.");
@@ -74,15 +84,63 @@ export default function EditarVisitaPage() {
     }
 
     setSaving(true);
-    const { error: updateError } = await supabase
-      .from("visitas")
-      .update({ imobiliaria_id: imobiliariaId, scheduled_at: scheduledAt.toISOString() })
-      .eq("id", id);
 
-    if (updateError) {
-      setError("Erro ao salvar. Tente novamente.");
-      setSaving(false);
-      return;
+    if (isCaptacao) {
+      if (!nomeEmpresa.trim()) {
+        setError("Informe o nome da empresa.");
+        setSaving(false);
+        return;
+      }
+
+      let currentProspectoId = prospectoId;
+
+      if (currentProspectoId) {
+        await supabase.from("prospectos").update({ name: nomeEmpresa.trim() }).eq("id", currentProspectoId);
+      } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: newProsp } = await supabase
+          .from("prospectos")
+          .insert({ name: nomeEmpresa.trim(), created_by: user?.id })
+          .select("id")
+          .single();
+        currentProspectoId = newProsp?.id ?? null;
+      }
+
+      const { error: updateError } = await supabase
+        .from("visitas")
+        .update({
+          scheduled_at: scheduledAt.toISOString(),
+          prospecto_id: currentProspectoId,
+          imobiliaria_id: null,
+        })
+        .eq("id", id);
+
+      if (updateError) {
+        setError("Erro ao salvar. Tente novamente.");
+        setSaving(false);
+        return;
+      }
+    } else {
+      if (!imobiliariaId) {
+        setError("Selecione uma imobiliária.");
+        setSaving(false);
+        return;
+      }
+
+      const { error: updateError } = await supabase
+        .from("visitas")
+        .update({
+          imobiliaria_id: imobiliariaId,
+          prospecto_id: null,
+          scheduled_at: scheduledAt.toISOString(),
+        })
+        .eq("id", id);
+
+      if (updateError) {
+        setError("Erro ao salvar. Tente novamente.");
+        setSaving(false);
+        return;
+      }
     }
 
     router.push("/dashboard?editado=1");
@@ -126,20 +184,57 @@ export default function EditarVisitaPage() {
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="h-[3px] bg-[#00AEEF]" />
+          <div className={`h-[3px] ${isCaptacao ? "bg-amber-400" : "bg-[#00AEEF]"}`} />
           <form onSubmit={handleSave} className="p-6 space-y-5">
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                Imobiliária <span className="text-red-400">*</span>
-              </label>
-              <Combobox
-                options={imobiliarias.map((imob) => ({ value: imob.id, label: imob.name }))}
-                value={imobiliariaId}
-                onChange={setImobiliariaId}
-                placeholder="Buscar imobiliária..."
-                emptyMessage="Nenhuma imobiliária encontrada."
-              />
-            </div>
+
+            {/* Toggle Visita de Captação */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isCaptacao}
+              onClick={() => {
+                setIsCaptacao((v) => !v);
+                setError(null);
+              }}
+              className="flex items-center gap-3 w-full rounded-xl border-2 border-gray-100 hover:border-amber-200 px-4 py-3 transition text-left"
+            >
+              <div className={`relative w-10 h-[22px] rounded-full flex-shrink-0 transition-colors ${isCaptacao ? "bg-amber-400" : "bg-gray-200"}`}>
+                <div className={`absolute top-[3px] w-4 h-4 bg-white rounded-full shadow transition-transform ${isCaptacao ? "left-[22px]" : "left-[3px]"}`} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Visita de Captação</p>
+                <p className="text-xs text-gray-400">Empresa ainda não cadastrada como parceira</p>
+              </div>
+            </button>
+
+            {/* Empresa / Imobiliária */}
+            {isCaptacao ? (
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Nome da empresa <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={nomeEmpresa}
+                  onChange={(e) => setNomeEmpresa(e.target.value)}
+                  placeholder="Ex: Imobiliária Central"
+                  className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none focus:border-amber-400 focus:bg-white transition placeholder:text-gray-300"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Imobiliária <span className="text-red-400">*</span>
+                </label>
+                <Combobox
+                  options={imobiliarias.map((imob) => ({ value: imob.id, label: imob.name }))}
+                  value={imobiliariaId}
+                  onChange={setImobiliariaId}
+                  placeholder="Buscar imobiliária..."
+                  emptyMessage="Nenhuma imobiliária encontrada."
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -182,7 +277,13 @@ export default function EditarVisitaPage() {
               type="submit"
               disabled={saving || cancelling}
               className="w-full rounded-xl py-3.5 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-60"
-              style={{ background: saving ? "#7dd3f0" : "linear-gradient(135deg, #003d6b 0%, #00AEEF 100%)" }}
+              style={{
+                background: saving
+                  ? "#7dd3f0"
+                  : isCaptacao
+                  ? "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)"
+                  : "linear-gradient(135deg, #003d6b 0%, #00AEEF 100%)",
+              }}
             >
               {saving ? "Salvando..." : "Salvar alterações"}
             </button>

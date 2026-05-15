@@ -83,7 +83,7 @@ export default function VisitasAdminTable({ visitas }: Props) {
     const map = new Map<string, string>();
     visitas.forEach((v) => {
       const name = (v.imobiliarias as { name: string } | undefined)?.name;
-      if (name) map.set(v.imobiliaria_id, name);
+      if (name && v.imobiliaria_id) map.set(v.imobiliaria_id, name);
     });
     return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
   }, [visitas]);
@@ -113,8 +113,8 @@ export default function VisitasAdminTable({ visitas }: Props) {
           valB = (b.users as { name: string } | undefined)?.name ?? "";
           break;
         case "imobiliaria":
-          valA = (a.imobiliarias as { name: string } | undefined)?.name ?? "";
-          valB = (b.imobiliarias as { name: string } | undefined)?.name ?? "";
+          valA = (a.imobiliarias as { name: string } | undefined)?.name ?? (a.prospectos as { name: string } | undefined)?.name ?? "";
+          valB = (b.imobiliarias as { name: string } | undefined)?.name ?? (b.prospectos as { name: string } | undefined)?.name ?? "";
           break;
         case "scheduled_at": valA = a.scheduled_at; valB = b.scheduled_at; break;
         case "checkin_at":   valA = a.checkin_at ?? ""; valB = b.checkin_at ?? ""; break;
@@ -265,7 +265,12 @@ export default function VisitasAdminTable({ visitas }: Props) {
                   {(v.users as { name: string } | undefined)?.name}
                 </td>
                 <td className="px-5 py-3.5 text-gray-600">
-                  {(v.imobiliarias as { name: string } | undefined)?.name}
+                  <div className="flex items-center gap-1.5">
+                    <span>{(v.imobiliarias as { name: string } | undefined)?.name ?? (v.prospectos as { name: string } | undefined)?.name}</span>
+                    {v.prospecto_id && (
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Captação</span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-5 py-3.5 text-gray-500 text-xs">{formatDate(v.scheduled_at)}</td>
                 <td className="px-5 py-3.5 text-gray-500 text-xs">

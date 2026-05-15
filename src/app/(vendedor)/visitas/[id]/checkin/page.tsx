@@ -30,7 +30,7 @@ export default function CheckinPage() {
 
       const { data, error: loadError } = await supabase
         .from("visitas")
-        .select("*, imobiliarias(id, name, address)")
+        .select("*, imobiliarias(id, name, address), prospectos(id, name)")
         .eq("id", id)
         .eq("user_id", user.id)
         .single();
@@ -119,6 +119,8 @@ export default function CheckinPage() {
   }
 
   const imob = visita?.imobiliarias as { name: string; address: string | null } | undefined;
+  const prosp = visita?.prospectos as { name: string } | undefined;
+  const entityName = imob?.name ?? prosp?.name ?? "—";
 
   return (
     <div className="min-h-screen bg-brand-bg">
@@ -138,7 +140,7 @@ export default function CheckinPage() {
         <div className="min-w-0">
           <h1 className="text-sm font-semibold text-gray-900 leading-tight">Check-in</h1>
           {visita && (
-            <p className="text-xs text-gray-400 truncate">{imob?.name}</p>
+            <p className="text-xs text-gray-400 truncate">{entityName}</p>
           )}
         </div>
       </header>
@@ -153,7 +155,7 @@ export default function CheckinPage() {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex">
             <div className="w-[3px] flex-shrink-0 bg-primary" />
             <div className="flex-1 p-4">
-              <p className="text-sm font-semibold text-gray-900">{imob?.name}</p>
+              <p className="text-sm font-semibold text-gray-900">{entityName}</p>
               {imob?.address && <p className="text-xs text-gray-400 mt-0.5">{imob.address}</p>}
               <p className="text-xs text-gray-400 mt-1">{formatDate(visita.scheduled_at)}</p>
             </div>

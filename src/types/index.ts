@@ -18,10 +18,18 @@ export interface Imobiliaria {
   created_at: string;
 }
 
+export interface Prospecto {
+  id: string;
+  name: string;
+  created_by: string | null;
+  created_at: string;
+}
+
 export interface Visita {
   id: string;
   user_id: string;
-  imobiliaria_id: string;
+  imobiliaria_id: string | null;
+  prospecto_id: string | null;
   scheduled_at: string;
   checkin_at: string | null;
   checkout_at: string | null;
@@ -34,6 +42,7 @@ export interface Visita {
   // joins
   users?: Pick<User, "id" | "name" | "email">;
   imobiliarias?: Pick<Imobiliaria, "id" | "name" | "address">;
+  prospectos?: Pick<Prospecto, "id" | "name">;
 }
 
 export interface Contato {

@@ -12,8 +12,10 @@ export default function AgendarVisitaPage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
+  const [isCaptacao, setIsCaptacao] = useState(false);
   const [imobiliarias, setImobiliarias] = useState<Imobiliaria[]>([]);
   const [imobiliariaId, setImobiliariaId] = useState("");
+  const [nomeEmpresa, setNomeEmpresa] = useState("");
   const [data, setData] = useState("");
   const [hora, setHora] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,9 +34,16 @@ export default function AgendarVisitaPage() {
     e.preventDefault();
     setError(null);
 
-    if (!imobiliariaId) {
-      setError("Selecione uma imobiliária.");
-      return;
+    if (isCaptacao) {
+      if (!nomeEmpresa.trim()) {
+        setError("Informe o nome da empresa.");
+        return;
+      }
+    } else {
+      if (!imobiliariaId) {
+        setError("Selecione uma imobiliária.");
+        return;
+      }
     }
 
     const scheduledAt = new Date(`${data}T${hora}`);
@@ -47,17 +56,44 @@ export default function AgendarVisitaPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
 
-    const { error: insertError } = await supabase.from("visitas").insert({
-      user_id: user.id,
-      imobiliaria_id: imobiliariaId,
-      scheduled_at: scheduledAt.toISOString(),
-      status: "agendada",
-    });
+    if (isCaptacao) {
+      const { data: prospecto, error: prospectoError } = await supabase
+        .from("prospectos")
+        .insert({ name: nomeEmpresa.trim(), created_by: user.id })
+        .select("id")
+        .single();
 
-    if (insertError) {
-      setError("Erro ao agendar visita. Tente novamente.");
-      setLoading(false);
-      return;
+      if (prospectoError || !prospecto) {
+        setError("Erro ao cadastrar empresa. Tente novamente.");
+        setLoading(false);
+        return;
+      }
+
+      const { error: insertError } = await supabase.from("visitas").insert({
+        user_id: user.id,
+        prospecto_id: prospecto.id,
+        scheduled_at: scheduledAt.toISOString(),
+        status: "agendada",
+      });
+
+      if (insertError) {
+        setError("Erro ao agendar visita. Tente novamente.");
+        setLoading(false);
+        return;
+      }
+    } else {
+      const { error: insertError } = await supabase.from("visitas").insert({
+        user_id: user.id,
+        imobiliaria_id: imobiliariaId,
+        scheduled_at: scheduledAt.toISOString(),
+        status: "agendada",
+      });
+
+      if (insertError) {
+        setError("Erro ao agendar visita. Tente novamente.");
+        setLoading(false);
+        return;
+      }
     }
 
     router.push("/dashboard?agendado=1");
@@ -83,21 +119,57 @@ export default function AgendarVisitaPage() {
 
       <main className="max-w-lg mx-auto px-4 py-6">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="h-[3px] bg-primary" />
+          <div className={`h-[3px] ${isCaptacao ? "bg-amber-400" : "bg-primary"}`} />
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                Imobiliária <span className="text-red-400">*</span>
-              </label>
-              <Combobox
-                options={imobiliarias.map((imob) => ({ value: imob.id, label: imob.name }))}
-                value={imobiliariaId}
-                onChange={setImobiliariaId}
-                placeholder="Buscar imobiliária..."
-                emptyMessage="Nenhuma imobiliária encontrada."
-              />
-            </div>
+            {/* Toggle Visita de Captação */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isCaptacao}
+              onClick={() => {
+                setIsCaptacao((v) => !v);
+                setError(null);
+              }}
+              className="flex items-center gap-3 w-full rounded-xl border-2 border-gray-100 hover:border-amber-200 px-4 py-3 transition text-left"
+            >
+              <div className={`relative w-10 h-[22px] rounded-full flex-shrink-0 transition-colors ${isCaptacao ? "bg-amber-400" : "bg-gray-200"}`}>
+                <div className={`absolute top-[3px] w-4 h-4 bg-white rounded-full shadow transition-transform ${isCaptacao ? "left-[22px]" : "left-[3px]"}`} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Visita de Captação</p>
+                <p className="text-xs text-gray-400">Empresa ainda não cadastrada como parceira</p>
+              </div>
+            </button>
+
+            {/* Empresa / Imobiliária */}
+            {isCaptacao ? (
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Nome da empresa <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={nomeEmpresa}
+                  onChange={(e) => setNomeEmpresa(e.target.value)}
+                  placeholder="Ex: Imobiliária Central"
+                  className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none focus:border-amber-400 focus:bg-white transition placeholder:text-gray-300"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Imobiliária <span className="text-red-400">*</span>
+                </label>
+                <Combobox
+                  options={imobiliarias.map((imob) => ({ value: imob.id, label: imob.name }))}
+                  value={imobiliariaId}
+                  onChange={setImobiliariaId}
+                  placeholder="Buscar imobiliária..."
+                  emptyMessage="Nenhuma imobiliária encontrada."
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -140,7 +212,13 @@ export default function AgendarVisitaPage() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full rounded-xl py-3.5 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-60 ${loading ? "bg-gradient-brand-muted" : "bg-gradient-brand"}`}
+              className={`w-full rounded-xl py-3.5 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-60 ${
+                loading
+                  ? "bg-gradient-brand-muted"
+                  : isCaptacao
+                  ? "bg-gradient-to-r from-amber-500 to-amber-400"
+                  : "bg-gradient-brand"
+              }`}
             >
               {loading ? "Agendando..." : "Agendar visita"}
             </button>

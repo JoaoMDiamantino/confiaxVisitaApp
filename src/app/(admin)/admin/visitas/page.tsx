@@ -20,7 +20,7 @@ export default async function AdminVisitasPage() {
 
   const { data: visitas } = await supabase
     .from("visitas")
-    .select("*, users(name, email), imobiliarias(name)")
+    .select("*, users(name, email), imobiliarias(name), prospectos(name)")
     .order("scheduled_at", { ascending: false })
     .limit(500);
 

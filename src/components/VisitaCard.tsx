@@ -8,6 +8,9 @@ interface Props {
 
 export default function VisitaCard({ visita }: Props) {
   const imob = visita.imobiliarias as { name: string; address: string | null } | undefined;
+  const prosp = visita.prospectos as { name: string } | undefined;
+  const entityName = imob?.name ?? prosp?.name ?? "—";
+  const isCaptacao = !!visita.prospecto_id;
   const isEmAndamento = visita.status === "em_andamento";
   const effectiveStatus = getEffectiveStatus(visita);
 
@@ -31,9 +34,14 @@ export default function VisitaCard({ visita }: Props) {
       <div className={`w-[3px] flex-shrink-0 ${borderColor}`} />
       <div className="flex-1 min-w-0 p-4">
         <div className="flex items-start justify-between mb-1">
-          <p className="text-sm font-semibold text-gray-900 leading-tight flex-1 min-w-0 pr-2 truncate">
-            {imob?.name}
-          </p>
+          <div className="flex-1 min-w-0 pr-2">
+            <p className="text-sm font-semibold text-gray-900 leading-tight truncate">{entityName}</p>
+            {isCaptacao && (
+              <span className="inline-block mt-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+                Captação
+              </span>
+            )}
+          </div>
           <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full flex-shrink-0 ${badgeClass}`}>
             {badgeLabel}
           </span>
