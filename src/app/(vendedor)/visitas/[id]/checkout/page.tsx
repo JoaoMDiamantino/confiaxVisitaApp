@@ -6,8 +6,17 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import type { Visita } from "@/types";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatPhone } from "@/lib/utils";
 import StarRating from "@/components/StarRating";
+
+interface ContatoForm {
+  name: string;
+  email: string;
+  role: string;
+  phone: string;
+}
+
+const emptyContato = (): ContatoForm => ({ name: "", email: "", role: "", phone: "" });
 
 export default function CheckoutPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +29,12 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // Contatos
+  const [contatos, setContatos] = useState<ContatoForm[]>([]);
+  const [formAberto, setFormAberto] = useState(false);
+  const [contatoAtual, setContatoAtual] = useState<ContatoForm>(emptyContato());
+  const [contatoError, setContatoError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,6 +62,21 @@ export default function CheckoutPage() {
     load();
     return () => { cancelled = true; };
   }, [id, supabase, router]);
+
+  function adicionarContato() {
+    setContatoError(null);
+    if (!contatoAtual.name.trim()) {
+      setContatoError("O nome do contato é obrigatório.");
+      return;
+    }
+    setContatos((prev) => [...prev, { ...contatoAtual, name: contatoAtual.name.trim() }]);
+    setContatoAtual(emptyContato());
+    setFormAberto(false);
+  }
+
+  function removerContato(idx: number) {
+    setContatos((prev) => prev.filter((_, i) => i !== idx));
+  }
 
   async function handleCheckout(e: React.FormEvent) {
     e.preventDefault();
@@ -87,13 +117,28 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Salvar contatos (se houver)
+    if (contatos.length > 0 && visita?.imobiliaria_id) {
+      const rows = contatos.map((c) => ({
+        imobiliaria_id: visita.imobiliaria_id,
+        visita_id: id,
+        created_by: user.id,
+        name: c.name,
+        email: c.email || null,
+        role: c.role || null,
+        phone: c.phone || null,
+      }));
+      await supabase.from("contatos").insert(rows);
+      // Erros de contatos são silenciosos para não bloquear o checkout
+    }
+
     router.push("/dashboard");
   }
 
   const imob = visita?.imobiliarias as { name: string; address: string | null } | undefined;
 
   return (
-    <div className="min-h-screen bg-[#f0f4f8]">
+    <div className="min-h-screen bg-[#f0f4f8] pb-10">
       {/* App bar */}
       <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
         <Link
@@ -183,6 +228,129 @@ export default function CheckoutPage() {
                   : `${notes.length} caracteres`}
               </p>
             </div>
+
+            {/* ── Contatos da visita ── */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Contatos da visita
+                  <span className="ml-1.5 text-[10px] font-normal text-gray-400 normal-case">(opcional)</span>
+                </p>
+              </div>
+
+              {/* Lista de contatos adicionados */}
+              {contatos.length > 0 && (
+                <ul className="space-y-2 mb-3">
+                  {contatos.map((c, i) => (
+                    <li key={i} className="flex items-start gap-3 bg-sky-50 border border-sky-100 rounded-xl px-3 py-2.5">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{c.name}</p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {[c.role, formatPhone(c.phone), c.email].filter(Boolean).join(" · ") || "—"}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removerContato(i)}
+                        className="text-gray-300 hover:text-red-400 transition mt-0.5 flex-shrink-0"
+                        aria-label="Remover contato"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Formulário inline de novo contato */}
+              {formAberto ? (
+                <div className="border-2 border-[#00AEEF]/30 rounded-xl p-4 space-y-3 bg-sky-50/40">
+                  <p className="text-xs font-semibold text-[#00AEEF]">Novo contato</p>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Nome <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={contatoAtual.name}
+                      onChange={(e) => setContatoAtual((p) => ({ ...p, name: e.target.value }))}
+                      placeholder="Nome completo"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#00AEEF] transition"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Função / Cargo</label>
+                      <input
+                        type="text"
+                        value={contatoAtual.role}
+                        onChange={(e) => setContatoAtual((p) => ({ ...p, role: e.target.value }))}
+                        placeholder="Ex: Gerente"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#00AEEF] transition"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Celular</label>
+                      <input
+                        type="tel"
+                        value={contatoAtual.phone}
+                        onChange={(e) => setContatoAtual((p) => ({ ...p, phone: formatPhone(e.target.value) }))}
+                        placeholder="(11) 99999-9999"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#00AEEF] transition"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">E-mail</label>
+                    <input
+                      type="email"
+                      value={contatoAtual.email}
+                      onChange={(e) => setContatoAtual((p) => ({ ...p, email: e.target.value }))}
+                      placeholder="email@imobiliaria.com"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#00AEEF] transition"
+                    />
+                  </div>
+
+                  {contatoError && (
+                    <p className="text-xs text-red-600">{contatoError}</p>
+                  )}
+
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={adicionarContato}
+                      className="flex-1 bg-[#00AEEF] text-white text-sm font-semibold rounded-lg py-2 hover:bg-[#0099d4] active:scale-[0.98] transition"
+                    >
+                      Salvar contato
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setFormAberto(false); setContatoAtual(emptyContato()); setContatoError(null); }}
+                      className="px-4 text-sm text-gray-400 hover:text-gray-600 transition"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setFormAberto(true)}
+                  className="w-full border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm text-gray-400 hover:border-[#00AEEF] hover:text-[#00AEEF] transition flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  {contatos.length === 0 ? "Cadastrar contato" : "Cadastrar outro"}
+                </button>
+              )}
+            </div>
+            {/* ── fim contatos ── */}
 
             {error && (
               <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">

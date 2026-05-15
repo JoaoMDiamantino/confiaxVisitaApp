@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Confiax Visita** is a responsive web app for ConFiaX Seguros to manage and track sales visit activity to real estate partner companies (imobiliárias). The PRD is at `prd.md` (written in Portuguese).
+**Confiax Visita** is a responsive web app for ConfiaX Seguros to manage and track sales visit activity to real estate partner companies (imobiliárias). The PRD is at `prd.md` (written in Portuguese).
 
 Two user roles:
-- **Vendedor** (salesperson) — mobile-first; schedules visits, does check-in/checkout with photo, evaluates visits
+- **** (salesperson) — mobile-first; schedules visits, does check-in/checkout with photo, evaluates visits
 - **Admin** (manager) — desktop/mobile; manages users, views all data, exports KPI reports
 
 ## Stack
@@ -39,12 +39,14 @@ Copy `.env.local.example` to `.env.local` and fill in the values before running.
 | `/dashboard` | Vendedor | Visit agenda and history |
 | `/visitas/agendar` | Vendedor | Schedule a new visit |
 | `/visitas/[id]/checkin` | Vendedor | Check-in with mandatory photo upload |
-| `/visitas/[id]/checkout` | Vendedor | Checkout with mandatory evaluation |
+| `/visitas/[id]/checkout` | Vendedor | Checkout with mandatory evaluation + optional contact registration |
 | `/historico` | Vendedor | Full visit history with imobiliária and date filters |
+| `/contatos` | Vendedor | Contact list per imobiliária — full CRUD |
 | `/admin` | Admin | KPI dashboard |
 | `/admin/usuarios` | Admin | User management |
 | `/admin/visitas` | Admin | Full visit history with filters |
-| `/admin/relatorios` | Admin | CSV/PDF report export |
+| `/admin/contatos` | Admin | Full contact list with imobiliária filter — create, edit, delete |
+| `/admin/relatorios` | Admin | CSV/PDF report export (visits + contacts) |
 
 Session and role are managed via Supabase Auth. Route guards live in `src/proxy.ts` (Next.js 16 renamed `middleware.ts` → `proxy.ts`). They redirect unauthenticated users to `/login` and enforce role checks (vendedor cannot access `/admin/*`).
 
@@ -68,7 +70,14 @@ User creation by admins goes through `src/app/api/admin/usuarios/route.ts`, whic
 - `status` enum(`agendada`, `em_andamento`, `concluida`)
 - `created_at` timestamp
 
-Row-Level Security (RLS): vendedores may only SELECT/UPDATE their own `visitas` rows; admins have full access.
+**`contatos`** — contacts registered during or after visits
+- `id` uuid PK
+- `imobiliaria_id` uuid → imobiliarias, `created_by` uuid → users
+- `visita_id` uuid → visitas (nullable — contacts can be added outside a visit)
+- `name` text, `email` text, `role` text, `phone` text
+- `created_at` timestamp, `updated_at` timestamp
+
+Row-Level Security (RLS): vendedores may SELECT all contatos (to see each other's contacts per imobiliária), INSERT their own, UPDATE their own; admins have full access including DELETE.
 
 ### Key Business Rules
 
@@ -78,6 +87,8 @@ Row-Level Security (RLS): vendedores may only SELECT/UPDATE their own `visitas` 
 - No minimum visit duration enforced
 - Inactive users (`active = false`) must be blocked at login
 - Imobiliárias are managed directly in Supabase — there is no app UI for this in v1
+- Contacts (`contatos`) can be registered during checkout (linked to the visit) or anytime from `/contatos`
+- Phone numbers must always be displayed and entered with the Brazilian mask `(XX) XXXXX-XXXX` / `(XX) XXXX-XXXX` — use `formatPhone` from `src/lib/utils.ts` for both input masking (`onChange`) and display
 
 ### Shared Components
 
@@ -86,10 +97,13 @@ Row-Level Security (RLS): vendedores may only SELECT/UPDATE their own `visitas` 
 | `VisitaCard` | `src/components/VisitaCard.tsx` | Shows scheduled/in-progress visit; renders check-in or checkout CTA |
 | `StarRating` | `src/components/StarRating.tsx` | 1–5 star picker; `role="group"`, `aria-label` and `aria-pressed` per star |
 | `LogoutButton` | `src/components/LogoutButton.tsx` | Accepts optional `className` |
-| `AdminNav` | `src/components/AdminNav.tsx` | Two named exports: `AdminDesktopNav` (horizontal links, `hidden md:flex`) and `AdminBottomNav` (fixed bottom bar, `md:hidden`). Both use `usePathname()` for active state. Add to every admin page; pair with `pb-24 md:pb-X` on `<main>`. |
+| `Combobox` | `src/components/Combobox.tsx` | Searchable select. **Always use instead of `<select>` for large lists** (imobiliárias, etc.) — in filters, forms, and any future pages. Accepts `{ value: string; label: string }[]`. For filters, `value=""` = no filter applied. |
+| `AdminNav` | `src/components/AdminNav.tsx` | Two named exports: `AdminDesktopNav` (horizontal links, `hidden md:flex`) and `AdminBottomNav` (fixed bottom bar, `md:hidden`). Both use `usePathname()` for active state. Add to every admin page; pair with `pb-24 md:pb-X` on `<main>`. Nav items: Admin, Usuários, Contatos, Relatórios. |
+| `VendedorBottomNav` | `src/components/VendedorBottomNav.tsx` | Fixed bottom nav for vendedor pages. Three items: Início (`/dashboard`), Histórico (`/historico`), Contatos (`/contatos`). Add to every vendedor page; pair with `pb-28` on `<main>`. |
 | `SuccessToast` | `src/components/SuccessToast.tsx` | Client component. Reads a URL query param (`param` prop), shows toast, clears param via `history.replaceState`. Wrap in `<Suspense>`. Usage: redirect to `/dashboard?agendado=1`, render `<SuccessToast param="agendado" message="..." />` in dashboard. |
 | `HistoricoList` | `src/components/HistoricoList.tsx` | Server component. Shows up to 5 completed visits; always renders a link to `/historico`. |
 | `HistoricoFiltros` | `src/components/HistoricoFiltros.tsx` | Client component. Receives all `visitas` and `imobiliarias` from server; filters client-side by imobiliária id and date range. Used in `/historico`. |
+| `ContatosVendedorClient` | `src/components/ContatosVendedorClient.tsx` | Client component for `/contatos`. Full-screen form overlay (checkout pattern) for create/edit. |
 
 ### Visual Identity
 
@@ -100,3 +114,9 @@ Row-Level Security (RLS): vendedores may only SELECT/UPDATE their own `visitas` 
 ## Out of Scope (v1)
 
 Geolocation, push notifications, calendar integrations, offline mode, imobiliária management UI, subcriteria ratings, per-imobiliária KPIs.
+
+## UI Patterns
+
+- **Mobile-first forms** with multiple fields: use full-screen overlay (fixed inset-0, bg-brand-bg, sticky app bar with "← Voltar", flex-1 overflow-y-auto content). See `ContatosVendedorClient.tsx` and checkout page as reference.
+- **Vendedor pages** always include `<VendedorBottomNav />` and `pb-28` on `<main>`.
+- **Admin pages** always include `<AdminBottomNav />` and `pb-24 md:pb-6` on `<main>`.

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Visita, Imobiliaria } from "@/types";
 import HistoricoFiltros from "@/components/HistoricoFiltros";
+import VendedorBottomNav from "@/components/VendedorBottomNav";
 
 export default async function HistoricoPage() {
   const supabase = await createServerClient();
@@ -48,12 +49,14 @@ export default async function HistoricoPage() {
         <h1 className="text-sm font-semibold text-gray-900">Histórico completo</h1>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-6">
+      <main className="max-w-lg mx-auto px-4 py-6 pb-28">
         <HistoricoFiltros
           visitas={(visitasData as Visita[]) ?? []}
           imobiliarias={(imobiliariasData as Imobiliaria[]) ?? []}
         />
       </main>
+
+      <VendedorBottomNav />
     </div>
   );
 }

@@ -1,8 +1,8 @@
 # PRD — Confiax Visita
 **Produto:** App de Gestão de Visitas de Vendedores  
 **Empresa:** ConFiaX Seguros  
-**Data:** 2026-05-01  
-**Versão:** 1.0
+**Data:** 2026-05-14  
+**Versão:** 1.1
 
 ---
 
@@ -18,6 +18,7 @@ Aplicação web responsiva para gestão das visitas dos vendedores/gestores de c
 - Calcular automaticamente a duração de cada visita
 - Permitir avaliação da visita (nota 1 a 5 + comentário livre)
 - Oferecer agendamento prévio de visitas dentro do app
+- Gerenciar a agenda de contatos de cada imobiliária parceira
 - Gerar KPIs e relatórios exportáveis para o gerente
 - Controlar acesso por perfil (vendedor e admin/gerente)
 
@@ -60,6 +61,7 @@ Aplicação web responsiva para gestão das visitas dos vendedores/gestores de c
 - Vendedor finaliza a visita via checkout
 - Sistema registra o timestamp e calcula a duração automaticamente
 - Sem bloqueio por tempo mínimo — duração fica disponível nos relatórios
+- Vendedor pode registrar contatos da visita opcionalmente durante o checkout (salvos na tabela `contatos` vinculados à visita)
 
 ### 4.5 Avaliação da Visita
 - Nota de 1 a 5 (escala de estrelas)
@@ -71,13 +73,23 @@ Aplicação web responsiva para gestão das visitas dos vendedores/gestores de c
 - Histórico de visitas realizadas com nota e comentários (exibe as 5 mais recentes na página principal)
 - Acesso ao histórico completo em `/historico` com filtros de imobiliária e período
 - Status da visita: Agendada / Em andamento / Concluída
+- Navegação inferior fixa com três abas: Início, Histórico, Contatos
 
-### 4.7 Painel Admin (Gerente)
+### 4.7 Agenda de Contatos (Vendedor)
+- Acesso em `/contatos`
+- Lista todos os contatos das imobiliárias (criados por qualquer vendedor)
+- Filtro por imobiliária (busca com Combobox)
+- CRUD completo: criar, editar contatos da própria criação
+- Campos por contato: nome, imobiliária, função/cargo, celular, e-mail
+- Formulário em tela cheia no mobile (padrão checkout)
+
+### 4.8 Painel Admin (Gerente)
 - Visão geral de todos os vendedores e visitas
 - Gerenciamento de usuários: cadastro, ativação e desativação de vendedores
 - Acesso ao histórico completo de visitas com filtros (vendedor, imobiliária, período)
+- Gestão de contatos em `/admin/contatos`: tabela completa com filtro por imobiliária, criar, editar e excluir contatos
 - KPIs (ver seção 5)
-- Exportação de relatórios (CSV e PDF)
+- Exportação de relatórios (CSV e PDF) — visitas e contatos
 
 ---
 
@@ -142,6 +154,20 @@ Relatórios exportáveis em **CSV** e **PDF**.
 | status | enum | `agendada`, `em_andamento`, `concluida` |
 | created_at | timestamp | Data de criação |
 
+### `contatos`
+| Campo | Tipo | Descrição |
+|---|---|---|
+| id | uuid | PK |
+| imobiliaria_id | uuid | FK → imobiliarias |
+| created_by | uuid | FK → users (vendedor que cadastrou) |
+| visita_id | uuid | FK → visitas (nullable — pode ser cadastrado fora de visita) |
+| name | text | Nome do contato |
+| role | text | Função / cargo (opcional) |
+| phone | text | Celular com máscara brasileira (opcional) |
+| email | text | E-mail (opcional) |
+| created_at | timestamp | Data de criação |
+| updated_at | timestamp | Data da última edição |
+
 ---
 
 ## 8. Identidade Visual
@@ -161,12 +187,14 @@ Relatórios exportáveis em **CSV** e **PDF**.
 | `/dashboard` | Vendedor | Agenda e visitas do vendedor |
 | `/visitas/agendar` | Vendedor | Agendamento de nova visita |
 | `/visitas/[id]/checkin` | Vendedor | Tela de check-in com upload de foto |
-| `/visitas/[id]/checkout` | Vendedor | Tela de checkout com avaliação |
+| `/visitas/[id]/checkout` | Vendedor | Tela de checkout com avaliação e cadastro opcional de contatos |
+| `/historico` | Vendedor | Histórico completo de visitas com filtros de imobiliária e data |
+| `/contatos` | Vendedor | Agenda de contatos das imobiliárias — CRUD |
 | `/admin` | Admin | Painel do gerente com KPIs |
 | `/admin/usuarios` | Admin | Gestão de usuários |
 | `/admin/visitas` | Admin | Histórico completo com filtros |
-| `/admin/relatorios` | Admin | Exportação de relatórios |
-| `/historico` | Vendedor | Histórico completo de visitas com filtros de imobiliária e data |
+| `/admin/contatos` | Admin | Gestão de contatos — tabela completa com filtro e exclusão |
+| `/admin/relatorios` | Admin | Exportação de relatórios (visitas e contatos em CSV/PDF) |
 
 ---
 
@@ -176,9 +204,11 @@ Relatórios exportáveis em **CSV** e **PDF**.
 - Foto é obrigatória para concluir o check-in
 - Avaliação (nota + comentário) é obrigatória para concluir o checkout
 - Duração da visita é calculada automaticamente sem bloqueios
-- Vendedor só visualiza suas próprias visitas
+- Vendedor só visualiza suas próprias visitas, mas vê todos os contatos da empresa
 - Admin visualiza dados de todos os vendedores
 - Usuários inativos não conseguem fazer login
+- Contatos podem ser registrados no checkout (vinculados à visita) ou diretamente em `/contatos`
+- Celular é sempre exibido e inserido com máscara brasileira `(XX) XXXXX-XXXX` / `(XX) XXXX-XXXX`
 
 ---
 
@@ -191,6 +221,7 @@ Relatórios exportáveis em **CSV** e **PDF**.
 - Modo offline
 - Nota média por imobiliária nos KPIs
 - Subcritérios de avaliação
+- Importação em massa de contatos
 
 ---
 
@@ -203,10 +234,13 @@ Componentes React reutilizáveis criados durante o desenvolvimento:
 | `VisitaCard` | `src/components/VisitaCard.tsx` | Card de visita agendada ou em andamento com botão de ação |
 | `StarRating` | `src/components/StarRating.tsx` | Avaliação interativa de 1 a 5 estrelas com acessibilidade |
 | `LogoutButton` | `src/components/LogoutButton.tsx` | Botão de logout reutilizável |
-| `AdminNav` | `src/components/AdminNav.tsx` | `AdminDesktopNav` (nav horizontal desktop) e `AdminBottomNav` (barra fixa mobile com safe-area) |
+| `Combobox` | `src/components/Combobox.tsx` | Select com busca — usar sempre para listas grandes (imobiliárias, etc.) |
+| `AdminNav` | `src/components/AdminNav.tsx` | `AdminDesktopNav` (nav horizontal desktop) e `AdminBottomNav` (barra fixa mobile com safe-area). Itens: Admin, Usuários, Contatos, Relatórios. |
+| `VendedorBottomNav` | `src/components/VendedorBottomNav.tsx` | Barra de navegação inferior fixa para páginas do vendedor. Itens: Início, Histórico, Contatos. |
 | `SuccessToast` | `src/components/SuccessToast.tsx` | Toast de feedback positivo com auto-dismiss 4s, parametrizável por query param |
 | `HistoricoList` | `src/components/HistoricoList.tsx` | Lista com até 5 visitas concluídas e link para o histórico completo |
 | `HistoricoFiltros` | `src/components/HistoricoFiltros.tsx` | Filtros client-side de imobiliária e intervalo de datas com contador de resultados |
+| `ContatosVendedorClient` | `src/components/ContatosVendedorClient.tsx` | CRUD de contatos para vendedor — formulário em tela cheia no mobile |
 
 ---
 

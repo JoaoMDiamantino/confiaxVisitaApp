@@ -26,6 +26,15 @@ export function getEffectiveStatus(visita: { status: string; scheduled_at: strin
   return scheduledDay < nowDay ? "atrasada" : "agendada";
 }
 
+export function formatPhone(value: string | null | undefined): string {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) return digits.replace(/(\d{1,2})/, "($1");
+  if (digits.length <= 6) return digits.replace(/(\d{2})(\d{1,4})/, "($1) $2");
+  if (digits.length <= 10) return digits.replace(/(\d{2})(\d{4})(\d{1,4})/, "($1) $2-$3");
+  return digits.replace(/(\d{2})(\d{5})(\d{1,4})/, "($1) $2-$3");
+}
+
 export function formatDuration(minutes: number): string {
   if (minutes < 60) return `${minutes} min`;
   const h = Math.floor(minutes / 60);

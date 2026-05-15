@@ -8,6 +8,7 @@ import LogoutButton from "@/components/LogoutButton";
 import VisitaCard from "@/components/VisitaCard";
 import SuccessToast from "@/components/SuccessToast";
 import HistoricoList from "@/components/HistoricoList";
+import VendedorBottomNav from "@/components/VendedorBottomNav";
 
 export default async function DashboardPage() {
   const supabase = await createServerClient();
@@ -92,7 +93,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-8">
+      <main className="max-w-lg mx-auto px-4 py-6 pb-28 space-y-8">
         {/* Próximas visitas */}
         <section>
           <div className="flex items-center justify-between mb-4">
@@ -132,6 +133,8 @@ export default async function DashboardPage() {
           <HistoricoList visitas={historico} />
         </section>
       </main>
+
+      <VendedorBottomNav />
     </div>
   );
 }

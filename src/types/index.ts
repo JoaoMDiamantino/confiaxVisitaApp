@@ -35,3 +35,19 @@ export interface Visita {
   users?: Pick<User, "id" | "name" | "email">;
   imobiliarias?: Pick<Imobiliaria, "id" | "name" | "address">;
 }
+
+export interface Contato {
+  id: string;
+  imobiliaria_id: string;
+  visita_id: string | null;
+  created_by: string;
+  name: string;
+  email: string | null;
+  role: string | null;
+  phone: string | null;
+  created_at: string;
+  updated_at: string;
+  // joins
+  imobiliarias?: Pick<Imobiliaria, "id" | "name">;
+  users?: Pick<User, "id" | "name" | "email">;
+}
