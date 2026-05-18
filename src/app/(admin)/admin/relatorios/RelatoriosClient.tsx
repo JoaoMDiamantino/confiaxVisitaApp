@@ -91,16 +91,19 @@ export default function RelatoriosClient() {
 
     autoTable(doc, {
       startY: 22,
-      head: [["Gestor", "Imobiliária", "Data agendada", "Duração", "Nota"]],
+      head: [["Gestor", "Imobiliária", "Data agendada", "Check-in", "Duração", "Nota", "Comentários"]],
       body: visitas.map((v) => [
         (v.users as { name: string } | undefined)?.name ?? "",
         (v.imobiliarias as { name: string } | undefined)?.name ?? "",
         formatDate(v.scheduled_at),
+        v.checkin_at ? formatDate(v.checkin_at) : "—",
         v.duration_minutes ? formatDuration(v.duration_minutes) : "—",
         v.rating ? "★".repeat(v.rating) : "—",
+        v.notes ?? "—",
       ]),
       styles: { fontSize: 9 },
       headStyles: { fillColor: [0, 174, 239] },
+      columnStyles: { 6: { cellWidth: 60 } },
     });
 
     doc.save(`visitas_${inicio}_${fim}.pdf`);
