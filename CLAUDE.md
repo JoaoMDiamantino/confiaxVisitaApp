@@ -89,6 +89,7 @@ Row-Level Security (RLS): vendedores may SELECT all contatos (to see each other'
 - Imobiliárias are managed directly in Supabase — there is no app UI for this in v1
 - Contacts (`contatos`) can be registered during checkout (linked to the visit) or anytime from `/contatos`
 - Phone numbers must always be displayed and entered with the Brazilian mask `(XX) XXXXX-XXXX` / `(XX) XXXX-XXXX` — use `formatPhone` from `src/lib/utils.ts` for both input masking (`onChange`) and display
+- Check-in photos are compressed client-side before upload — use `compressImage` from `src/lib/utils.ts` (resizes to max 1600px, re-encodes as JPEG) for any new photo upload flow, to reduce failures on weak mobile connections. Uploads to Supabase Storage should retry on transient failure (see `uploadPhotoWithRetry` in `src/app/(vendedor)/visitas/[id]/checkin/page.tsx` as the reference pattern) and log the real Supabase error via `console.error` rather than only showing a generic message
 
 ### Shared Components
 

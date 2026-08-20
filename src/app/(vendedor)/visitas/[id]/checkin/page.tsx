@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import type { Visita } from "@/types";
-import { formatDate } from "@/lib/utils";
+import { compressImage, formatDate } from "@/lib/utils";
 
 export default function CheckinPage() {
   const { id } = useParams<{ id: string }>();
@@ -55,7 +55,7 @@ export default function CheckinPage() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0];
     if (!selected) return;
 
@@ -71,7 +71,21 @@ export default function CheckinPage() {
     }
 
     setError(null);
-    setFile(selected);
+    setFile(await compressImage(selected));
+  }
+
+  async function uploadPhotoWithRetry(path: string, photo: File, attempts = 3) {
+    let lastError: { message: string } | null = null;
+    for (let i = 0; i < attempts; i++) {
+      const { error: uploadError } = await supabase.storage
+        .from("visita-fotos")
+        .upload(path, photo, { contentType: photo.type });
+      if (!uploadError) return { error: null };
+      lastError = uploadError;
+      console.error(`Upload de foto falhou (tentativa ${i + 1}/${attempts}):`, uploadError);
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, (i + 1) * 1000));
+    }
+    return { error: lastError };
   }
 
   async function handleCheckin() {
@@ -85,12 +99,10 @@ export default function CheckinPage() {
     const ext = file.name.split(".").pop();
     const path = `${user.id}/${id}-${Date.now()}.${ext}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("visita-fotos")
-      .upload(path, file, { contentType: file.type });
+    const { error: uploadError } = await uploadPhotoWithRetry(path, file);
 
     if (uploadError) {
-      setError("Erro ao enviar a foto. Tente novamente.");
+      setError("Erro ao enviar a foto. Verifique sua conexão e tente novamente.");
       setUploading(false);
       return;
     }
