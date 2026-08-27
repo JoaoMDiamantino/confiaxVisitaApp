@@ -89,7 +89,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Proteção das rotas do vendedor por role
-  if (user && (pathname.startsWith("/dashboard") || pathname.startsWith("/visitas") || pathname.startsWith("/historico") || pathname.startsWith("/contatos"))) {
+  if (user && (pathname.startsWith("/dashboard") || pathname.startsWith("/visitas") || pathname.startsWith("/historico") || pathname.startsWith("/contatos") || pathname.startsWith("/acoes"))) {
     const profile = await getProfile();
 
     if (!profile?.active) {

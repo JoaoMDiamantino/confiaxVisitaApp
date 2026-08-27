@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { createServerClient } from "@/lib/supabase/server";
 import { formatDuration } from "@/lib/utils";
@@ -29,7 +30,7 @@ export default async function AdminPage() {
     .eq("status", "concluida")
     .gte("checkout_at", firstOfMonth);
 
-  const [{ data: visitasHistorico }, { data: gestores }] = await Promise.all([
+  const [{ data: visitasHistorico }, { data: gestores }, { data: acoesAbertasData }, { data: contatosData }] = await Promise.all([
     supabase
       .from("visitas")
       .select("id, user_id, checkout_at, duration_minutes, rating")
@@ -42,7 +43,15 @@ export default async function AdminPage() {
       .eq("role", "vendedor")
       .eq("active", true)
       .order("name"),
+    supabase
+      .from("acoes")
+      .select("id")
+      .in("status", ["aberto", "em_andamento"]),
+    supabase.from("contatos").select("id"),
   ]);
+
+  const acoesAbertas = (acoesAbertasData as { id: string }[] | null)?.length ?? 0;
+  const totalContatos = (contatosData as { id: string }[] | null)?.length ?? 0;
 
   const totalVisitas = visitasMes?.length ?? 0;
   const notaMedia = totalVisitas > 0
@@ -103,6 +112,28 @@ export default async function AdminPage() {
         </svg>
       ),
     },
+    {
+      label: "Ações em aberto",
+      value: acoesAbertas,
+      accent: "bg-rose-400",
+      href: "/admin/acoes",
+      icon: (
+        <svg className="w-5 h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    },
+    {
+      label: "Contatos cadastrados",
+      value: totalContatos,
+      accent: "bg-cyan-400",
+      href: "/admin/contatos",
+      icon: (
+        <svg className="w-5 h-5 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -124,17 +155,29 @@ export default async function AdminPage() {
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
             KPIs — {now.toLocaleString("pt-BR", { month: "long", year: "numeric" })}
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {kpis.map((kpi) => (
-              <div key={kpi.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className={`h-[3px] ${kpi.accent}`} />
-                <div className="p-5">
-                  <div className="mb-3">{kpi.icon}</div>
-                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{kpi.label}</p>
-                  <p className="text-3xl font-extrabold text-gray-900 tabular-nums">{kpi.value}</p>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {kpis.map((kpi) => {
+              const cardCls = "bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden block";
+              const content = (
+                <>
+                  <div className={`h-[3px] ${kpi.accent}`} />
+                  <div className="p-5">
+                    <div className="mb-3">{kpi.icon}</div>
+                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{kpi.label}</p>
+                    <p className="text-3xl font-extrabold text-gray-900 tabular-nums">{kpi.value}</p>
+                  </div>
+                </>
+              );
+              return kpi.href ? (
+                <Link key={kpi.label} href={kpi.href} className={`${cardCls} hover:border-primary/30 transition`}>
+                  {content}
+                </Link>
+              ) : (
+                <div key={kpi.label} className={cardCls}>
+                  {content}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

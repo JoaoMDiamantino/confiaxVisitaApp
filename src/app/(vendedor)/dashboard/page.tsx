@@ -22,7 +22,7 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .single();
 
-  const [{ data: agendadasData }, { data: historicoData }] = await Promise.all([
+  const [{ data: agendadasData }, { data: historicoData }, { data: acoesAbertasData }] = await Promise.all([
     supabase
       .from("visitas")
       .select("*, imobiliarias(id, name, address), prospectos(id, name)")
@@ -35,10 +35,15 @@ export default async function DashboardPage() {
       .eq("user_id", user.id)
       .eq("status", "concluida")
       .order("scheduled_at", { ascending: false }),
+    supabase
+      .from("acoes")
+      .select("id")
+      .in("status", ["aberto", "em_andamento"]),
   ]);
 
   const agendadas = (agendadasData as Visita[]) ?? [];
   const historico = (historicoData as Visita[]) ?? [];
+  const acoesAbertas = (acoesAbertasData as { id: string }[] | null)?.length ?? 0;
 
   const initial = profile?.name?.[0]?.toUpperCase() ?? "V";
 
@@ -94,6 +99,32 @@ export default async function DashboardPage() {
       </div>
 
       <main className="max-w-lg mx-auto px-4 py-6 pb-28 space-y-8">
+        {/* Ações em aberto */}
+        <Link
+          href="/acoes"
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex hover:border-primary/30 transition"
+        >
+          <div className={`w-[3px] flex-shrink-0 ${acoesAbertas > 0 ? "bg-amber-400" : "bg-gray-200"}`} />
+          <div className="flex-1 p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${acoesAbertas > 0 ? "bg-amber-50" : "bg-gray-50"}`}>
+                <svg className={`w-5 h-5 ${acoesAbertas > 0 ? "text-amber-500" : "text-gray-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  {acoesAbertas} {acoesAbertas === 1 ? "ação em aberto" : "ações em aberto"}
+                </p>
+                <p className="text-xs text-gray-400">Toque para ver o quadro completo</p>
+              </div>
+            </div>
+            <svg className="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </div>
+        </Link>
+
         {/* Próximas visitas */}
         <section>
           <div className="flex items-center justify-between mb-4">

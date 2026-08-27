@@ -15,16 +15,52 @@ export function formatDate(dateStr: string): string {
   return `${datePart} às ${timePart}`;
 }
 
+function isPastDate(dateStr: string): boolean {
+  const now = new Date();
+  const target = new Date(dateStr);
+  const nowSP    = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const targetSP = new Date(target.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const nowDay    = new Date(nowSP.getFullYear(), nowSP.getMonth(), nowSP.getDate());
+  const targetDay = new Date(targetSP.getFullYear(), targetSP.getMonth(), targetSP.getDate());
+  return targetDay < nowDay;
+}
+
 export function getEffectiveStatus(visita: { status: string; scheduled_at: string }): string {
   if (visita.status !== "agendada") return visita.status;
-  const now = new Date();
-  const scheduled = new Date(visita.scheduled_at);
-  const nowSP       = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-  const scheduledSP = new Date(scheduled.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-  const nowDay       = new Date(nowSP.getFullYear(), nowSP.getMonth(), nowSP.getDate());
-  const scheduledDay = new Date(scheduledSP.getFullYear(), scheduledSP.getMonth(), scheduledSP.getDate());
-  return scheduledDay < nowDay ? "atrasada" : "agendada";
+  return isPastDate(visita.scheduled_at) ? "atrasada" : "agendada";
 }
+
+export function formatDateOnly(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+export function getEffectiveAcaoStatus(acao: { status: string; due_date: string }): string {
+  if (acao.status !== "aberto" && acao.status !== "em_andamento") return acao.status;
+  // due_date é uma data pura (YYYY-MM-DD, sem timezone) — comparar por calendário,
+  // não por instante, para não deslocar um dia ao converter para America/Sao_Paulo.
+  const [y, m, d] = acao.due_date.split("-").map(Number);
+  const dueDay = new Date(y, m - 1, d);
+  const nowSP = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const todaySP = new Date(nowSP.getFullYear(), nowSP.getMonth(), nowSP.getDate());
+  return dueDay < todaySP ? "atrasado" : acao.status;
+}
+
+export const ACAO_STATUS_LABEL: Record<string, string> = {
+  aberto: "Aberto",
+  em_andamento: "Em andamento",
+  concluido: "Concluído",
+  cancelado: "Cancelado",
+  atrasado: "Atrasado",
+};
+
+export const ACAO_STATUS_COLOR: Record<string, string> = {
+  aberto: "bg-blue-50 text-blue-600",
+  em_andamento: "bg-amber-50 text-amber-600",
+  concluido: "bg-emerald-50 text-emerald-600",
+  cancelado: "bg-gray-100 text-gray-500",
+  atrasado: "bg-red-50 text-red-600",
+};
 
 export function formatPhone(value: string | null | undefined): string {
   if (!value) return "";

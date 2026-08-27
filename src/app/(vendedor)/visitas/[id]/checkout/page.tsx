@@ -18,6 +18,14 @@ interface ContatoForm {
 
 const emptyContato = (): ContatoForm => ({ name: "", email: "", role: "", phone: "" });
 
+interface AcaoForm {
+  title: string;
+  description: string;
+  due_date: string;
+}
+
+const emptyAcao = (): AcaoForm => ({ title: "", description: "", due_date: "" });
+
 export default function CheckoutPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -35,6 +43,12 @@ export default function CheckoutPage() {
   const [formAberto, setFormAberto] = useState(false);
   const [contatoAtual, setContatoAtual] = useState<ContatoForm>(emptyContato());
   const [contatoError, setContatoError] = useState<string | null>(null);
+
+  // Ações
+  const [acoesForm, setAcoesForm] = useState<AcaoForm[]>([]);
+  const [acaoFormAberto, setAcaoFormAberto] = useState(false);
+  const [acaoAtual, setAcaoAtual] = useState<AcaoForm>(emptyAcao());
+  const [acaoError, setAcaoError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,6 +90,20 @@ export default function CheckoutPage() {
 
   function removerContato(idx: number) {
     setContatos((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function adicionarAcao() {
+    setAcaoError(null);
+    if (!acaoAtual.title.trim()) { setAcaoError("O título é obrigatório."); return; }
+    if (!acaoAtual.description.trim()) { setAcaoError("A descrição é obrigatória."); return; }
+    if (!acaoAtual.due_date) { setAcaoError("A data de finalização é obrigatória."); return; }
+    setAcoesForm((prev) => [...prev, { ...acaoAtual, title: acaoAtual.title.trim(), description: acaoAtual.description.trim() }]);
+    setAcaoAtual(emptyAcao());
+    setAcaoFormAberto(false);
+  }
+
+  function removerAcao(idx: number) {
+    setAcoesForm((prev) => prev.filter((_, i) => i !== idx));
   }
 
   async function handleCheckout(e: React.FormEvent) {
@@ -130,6 +158,20 @@ export default function CheckoutPage() {
       }));
       await supabase.from("contatos").insert(rows);
       // Erros de contatos são silenciosos para não bloquear o checkout
+    }
+
+    // Salvar ações (se houver)
+    if (acoesForm.length > 0) {
+      const rows = acoesForm.map((a) => ({
+        imobiliaria_id: visita?.imobiliaria_id ?? null,
+        visita_id: id,
+        created_by: user.id,
+        title: a.title,
+        description: a.description,
+        due_date: a.due_date,
+      }));
+      await supabase.from("acoes").insert(rows);
+      // Erros de ações são silenciosos para não bloquear o checkout
     }
 
     router.push("/dashboard");
@@ -365,6 +407,120 @@ export default function CheckoutPage() {
               </div>
             )}
             {/* ── fim contatos ── */}
+
+            {/* ── Ações da visita ── */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Ações
+                  <span className="ml-1.5 text-[10px] font-normal text-gray-400 normal-case">(opcional)</span>
+                </p>
+              </div>
+
+              {/* Lista de ações adicionadas */}
+              {acoesForm.length > 0 && (
+                <ul className="space-y-2 mb-3">
+                  {acoesForm.map((a, i) => (
+                    <li key={i} className="flex items-start gap-3 bg-sky-50 border border-sky-100 rounded-xl px-3 py-2.5">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{a.title}</p>
+                        <p className="text-xs text-gray-500 truncate">
+                          Finalizar até {a.due_date.split("-").reverse().join("/")}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removerAcao(i)}
+                        className="text-gray-300 hover:text-red-400 transition mt-0.5 flex-shrink-0"
+                        aria-label="Remover ação"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Formulário inline de nova ação */}
+              {acaoFormAberto ? (
+                <div className="border-2 border-[#00AEEF]/30 rounded-xl p-4 space-y-3 bg-sky-50/40">
+                  <p className="text-xs font-semibold text-[#00AEEF]">Nova ação</p>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Título <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={acaoAtual.title}
+                      onChange={(e) => setAcaoAtual((p) => ({ ...p, title: e.target.value }))}
+                      placeholder="Ex: Enviar tabela de comissões"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#00AEEF] transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Descrição <span className="text-red-400">*</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={acaoAtual.description}
+                      onChange={(e) => setAcaoAtual((p) => ({ ...p, description: e.target.value }))}
+                      placeholder="Detalhe o que precisa ser feito"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#00AEEF] transition resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Data de finalização <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={acaoAtual.due_date}
+                      onChange={(e) => setAcaoAtual((p) => ({ ...p, due_date: e.target.value }))}
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#00AEEF] transition"
+                    />
+                  </div>
+
+                  {acaoError && (
+                    <p className="text-xs text-red-600">{acaoError}</p>
+                  )}
+
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={adicionarAcao}
+                      className="flex-1 bg-[#00AEEF] text-white text-sm font-semibold rounded-lg py-2 hover:bg-[#0099d4] active:scale-[0.98] transition"
+                    >
+                      Salvar ação
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setAcaoFormAberto(false); setAcaoAtual(emptyAcao()); setAcaoError(null); }}
+                      className="px-4 text-sm text-gray-400 hover:text-gray-600 transition"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setAcaoFormAberto(true)}
+                  className="w-full border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm text-gray-400 hover:border-[#00AEEF] hover:text-[#00AEEF] transition flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  {acoesForm.length === 0 ? "Cadastrar ação" : "Cadastrar outra"}
+                </button>
+              )}
+            </div>
+            {/* ── fim ações ── */}
 
             {error && (
               <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">

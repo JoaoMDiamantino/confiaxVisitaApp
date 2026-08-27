@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Confiax Visita** is a responsive web app for ConfiaX Seguros to manage and track sales visit activity to real estate partner companies (imobiliárias). The PRD is at `prd.md` (written in Portuguese).
 
 Two user roles:
-- **** (salesperson) — mobile-first; schedules visits, does check-in/checkout with photo, evaluates visits
+- **Vendedor** (salesperson) — mobile-first; schedules visits, does check-in/checkout with photo, evaluates visits
 - **Admin** (manager) — desktop/mobile; manages users, views all data, exports KPI reports
 
 ## Stack
@@ -23,7 +23,7 @@ Two user roles:
 ```bash
 npm run dev        # start local dev server (Turbopack)
 npm run build      # production build
-npm run lint       # ESLint
+npm run lint       # ESLint — currently broken (package.json still calls the removed `next lint`; Next 16 dropped it). Use `npx tsc --noEmit` + `npm run build` to validate changes instead.
 npx tsc --noEmit   # TypeScript type check
 ```
 
@@ -42,10 +42,12 @@ Copy `.env.local.example` to `.env.local` and fill in the values before running.
 | `/visitas/[id]/checkout` | Vendedor | Checkout with mandatory evaluation + optional contact registration |
 | `/historico` | Vendedor | Full visit history with imobiliária and date filters |
 | `/contatos` | Vendedor | Contact list per imobiliária — full CRUD |
+| `/acoes` | Vendedor | Action items ("Ações") board — create/edit, comment, change status |
 | `/admin` | Admin | KPI dashboard |
 | `/admin/usuarios` | Admin | User management |
 | `/admin/visitas` | Admin | Full visit history with filters |
 | `/admin/contatos` | Admin | Full contact list with imobiliária filter — create, edit, delete |
+| `/admin/acoes` | Admin | Full action-item board with filters, sorting, pagination — create (on behalf of any colaborador), edit title/description/due date, change status, comment |
 | `/admin/relatorios` | Admin | CSV/PDF report export (visits + contacts) |
 
 Session and role are managed via Supabase Auth. Route guards live in `src/proxy.ts` (Next.js 16 renamed `middleware.ts` → `proxy.ts`). They redirect unauthenticated users to `/login` and enforce role checks (vendedor cannot access `/admin/*`).
@@ -53,6 +55,8 @@ Session and role are managed via Supabase Auth. Route guards live in `src/proxy.
 User creation by admins goes through `src/app/api/admin/usuarios/route.ts`, which uses `SUPABASE_SERVICE_ROLE_KEY` via `createAdminClient()` from `src/lib/supabase/server.ts`.
 
 ### Database Schema (Supabase / PostgreSQL)
+
+No SQL migrations are tracked in this repo (no `supabase/migrations` folder) — every table, enum, RLS policy, and trigger for every table (not just `imobiliarias`) is applied by hand in the Supabase Dashboard SQL Editor. When a task requires a schema change, give the user the exact SQL to run there rather than adding a migration file.
 
 **`users`** — extends Supabase auth.users
 - `id` uuid PK, `name` text, `email` text, `role` enum(`vendedor`,`admin`), `active` boolean, `created_at` timestamp
@@ -79,6 +83,18 @@ User creation by admins goes through `src/app/api/admin/usuarios/route.ts`, whic
 
 Row-Level Security (RLS): vendedores may SELECT all contatos (to see each other's contacts per imobiliária), INSERT their own, UPDATE their own; admins have full access including DELETE.
 
+**`acoes`** — action items ("Plano de Ação"), registered during checkout or freely from `/acoes`
+- `id` uuid PK
+- `imobiliaria_id` uuid → imobiliarias (**nullable** — unlike `contatos`, an ação can exist without a company), `visita_id` uuid → visitas (nullable), `created_by` uuid → users
+- `title` text, `description` text, `due_date` date
+- `status` enum(`aberto`, `em_andamento`, `concluido`, `cancelado`) — plus a derived (non-persisted) `atrasado` state computed by `getEffectiveAcaoStatus()` in `src/lib/utils.ts` when `due_date` has passed and status is still `aberto`/`em_andamento`, mirroring `getEffectiveStatus()` for visitas
+- `created_at`, `updated_at` timestamp
+
+**`acao_comentarios`** — comment thread on an ação
+- `id` uuid PK, `acao_id` uuid → acoes (cascade delete), `created_by` uuid → users, `comment` text, `created_at` timestamp
+
+RLS: like contatos, all authenticated users may SELECT all ações/comentários (shared board, visible to everyone). INSERT: vendedores insert with `created_by = auth.uid()`; admins may additionally insert with `created_by` set to **any** user (lets an admin log an ação on behalf of a colaborador — see `AcoesAdminTable.tsx`'s "Nova Ação" modal). UPDATE: any authenticated user may update status/fields (deliberately more permissive than contatos' "update own only", since ações have no `assigned_to` and are meant as a shared to-do board) — **except** `title`/`description`/`due_date`, which a DB trigger (`enforce_acao_locked_fields`) blocks for non-admins, so only an admin can edit those three fields after creation (vendedores see them locked/disabled in the UI too). DELETE on both tables: admin only.
+
 ### Key Business Rules
 
 - Photo upload is mandatory to complete check-in
@@ -90,6 +106,9 @@ Row-Level Security (RLS): vendedores may SELECT all contatos (to see each other'
 - Contacts (`contatos`) can be registered during checkout (linked to the visit) or anytime from `/contatos`
 - Phone numbers must always be displayed and entered with the Brazilian mask `(XX) XXXXX-XXXX` / `(XX) XXXX-XXXX` — use `formatPhone` from `src/lib/utils.ts` for both input masking (`onChange`) and display
 - Check-in photos are compressed client-side before upload — use `compressImage` from `src/lib/utils.ts` (resizes to max 1600px, re-encodes as JPEG) for any new photo upload flow, to reduce failures on weak mobile connections. Uploads to Supabase Storage should retry on transient failure (see `uploadPhotoWithRetry` in `src/app/(vendedor)/visitas/[id]/checkin/page.tsx` as the reference pattern) and log the real Supabase error via `console.error` rather than only showing a generic message
+- Ações (`acoes`) can be registered during checkout (linked to the visit, same optional inline-form pattern as contacts) or anytime from `/acoes`; unlike contacts, imobiliária is optional and the section is shown even on captação (prospecting) visits
+- Only an admin can edit an ação's título/descrição/data de finalização once created (enforced both in the UI — fields disabled for vendedores in `AcoesVendedorClient.tsx` — and in the DB via the `enforce_acao_locked_fields` trigger); any vendedor may still change status and add comments
+- An admin creating an ação from `/admin/acoes` picks a "Colaborador" (any active user) to set as `created_by`, so ações can be logged on a salesperson's behalf
 
 ### Shared Components
 
@@ -99,12 +118,15 @@ Row-Level Security (RLS): vendedores may SELECT all contatos (to see each other'
 | `StarRating` | `src/components/StarRating.tsx` | 1–5 star picker; `role="group"`, `aria-label` and `aria-pressed` per star |
 | `LogoutButton` | `src/components/LogoutButton.tsx` | Accepts optional `className` |
 | `Combobox` | `src/components/Combobox.tsx` | Searchable select. **Always use instead of `<select>` for large lists** (imobiliárias, etc.) — in filters, forms, and any future pages. Accepts `{ value: string; label: string }[]`. For filters, `value=""` = no filter applied. |
-| `AdminNav` | `src/components/AdminNav.tsx` | Two named exports: `AdminDesktopNav` (horizontal links, `hidden md:flex`) and `AdminBottomNav` (fixed bottom bar, `md:hidden`). Both use `usePathname()` for active state. Add to every admin page; pair with `pb-24 md:pb-X` on `<main>`. Nav items: Admin, Usuários, Contatos, Relatórios. |
-| `VendedorBottomNav` | `src/components/VendedorBottomNav.tsx` | Fixed bottom nav for vendedor pages. Three items: Início (`/dashboard`), Histórico (`/historico`), Contatos (`/contatos`). Add to every vendedor page; pair with `pb-28` on `<main>`. |
+| `AdminNav` | `src/components/AdminNav.tsx` | Two named exports: `AdminDesktopNav` (horizontal links, `hidden md:flex`) and `AdminBottomNav` (fixed bottom bar, `md:hidden`). Both use `usePathname()` for active state. Add to every admin page; pair with `pb-24 md:pb-X` on `<main>`. Nav items: Admin, Visitas, Usuários, Contatos, Ações, Relatórios. |
+| `VendedorBottomNav` | `src/components/VendedorBottomNav.tsx` | Fixed bottom nav for vendedor pages. Four items: Início (`/dashboard`), Histórico (`/historico`), Contatos (`/contatos`), Ações (`/acoes`). Add to every vendedor page; pair with `pb-28` on `<main>`. |
 | `SuccessToast` | `src/components/SuccessToast.tsx` | Client component. Reads a URL query param (`param` prop), shows toast, clears param via `history.replaceState`. Wrap in `<Suspense>`. Usage: redirect to `/dashboard?agendado=1`, render `<SuccessToast param="agendado" message="..." />` in dashboard. |
 | `HistoricoList` | `src/components/HistoricoList.tsx` | Server component. Shows up to 5 completed visits; always renders a link to `/historico`. |
 | `HistoricoFiltros` | `src/components/HistoricoFiltros.tsx` | Client component. Receives all `visitas` and `imobiliarias` from server; filters client-side by imobiliária id and date range. Used in `/historico`. |
 | `ContatosVendedorClient` | `src/components/ContatosVendedorClient.tsx` | Client component for `/contatos`. Full-screen form overlay (checkout pattern) for create/edit. |
+| `AcoesVendedorClient` | `src/components/AcoesVendedorClient.tsx` | Client component for `/acoes`. Same full-screen overlay pattern as `ContatosVendedorClient`; título/descrição/due_date are disabled once an ação exists (admin-only edit), plus a comments section (list + add) inside the edit overlay. |
+| `AcoesAdminTable` | `src/components/AcoesAdminTable.tsx` | Client component for `/admin/acoes` — the supervisor board. Mirrors `VisitasAdminTable.tsx` (sortable columns, filters via `useMemo`, client-side pagination `PAGE_SIZE=50`). Also owns the "Nova Ação" creation modal (title/description/due_date/imobiliária + a "Colaborador" `<select>` that sets `created_by` on behalf of any active user). |
+| `AcaoDetailModal` | `src/components/AcaoDetailModal.tsx` | Detail/edit modal opened from `AcoesAdminTable`. Mirrors `VisitaDetailModal.tsx`'s layout, but adds an admin-only edit mode for título/descrição/due_date, a status `<select>`, and a comments section (list + add) — the first comment-thread UI in the app. |
 
 ### Visual Identity
 

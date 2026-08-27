@@ -60,3 +60,31 @@ export interface Contato {
   imobiliarias?: Pick<Imobiliaria, "id" | "name">;
   users?: Pick<User, "id" | "name" | "email">;
 }
+
+export type AcaoStatus = "aberto" | "em_andamento" | "concluido" | "cancelado";
+
+export interface Acao {
+  id: string;
+  imobiliaria_id: string | null;
+  visita_id: string | null;
+  created_by: string;
+  title: string;
+  description: string;
+  due_date: string;
+  status: AcaoStatus;
+  created_at: string;
+  updated_at: string;
+  // joins
+  imobiliarias?: Pick<Imobiliaria, "id" | "name">;
+  users?: Pick<User, "id" | "name" | "email">;
+}
+
+export interface AcaoComentario {
+  id: string;
+  acao_id: string;
+  created_by: string;
+  comment: string;
+  created_at: string;
+  // joins
+  users?: Pick<User, "id" | "name" | "email">;
+}
