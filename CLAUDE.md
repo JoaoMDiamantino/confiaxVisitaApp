@@ -52,7 +52,7 @@ Copy `.env.local.example` to `.env.local` and fill in the values before running.
 
 Session and role are managed via Supabase Auth. Route guards live in `src/proxy.ts` (Next.js 16 renamed `middleware.ts` → `proxy.ts`). They redirect unauthenticated users to `/login` and enforce role checks (vendedor cannot access `/admin/*`).
 
-User creation by admins goes through `src/app/api/admin/usuarios/route.ts`, which uses `SUPABASE_SERVICE_ROLE_KEY` via `createAdminClient()` from `src/lib/supabase/server.ts`.
+User creation, activation toggling, and password resets by admins all go through `src/app/api/admin/usuarios/route.ts` (`POST` create, `PATCH` toggle `active`, `PUT` reset password), which uses `SUPABASE_SERVICE_ROLE_KEY` via `createAdminClient()` from `src/lib/supabase/server.ts`.
 
 ### Database Schema (Supabase / PostgreSQL)
 
@@ -109,6 +109,7 @@ RLS: like contatos, all authenticated users may SELECT all ações/comentários 
 - Ações (`acoes`) can be registered during checkout (linked to the visit, same optional inline-form pattern as contacts) or anytime from `/acoes`; unlike contacts, imobiliária is optional and the section is shown even on captação (prospecting) visits
 - Only an admin can edit an ação's título/descrição/data de finalização once created (enforced both in the UI — fields disabled for vendedores in `AcoesVendedorClient.tsx` — and in the DB via the `enforce_acao_locked_fields` trigger); any vendedor may still change status and add comments
 - An admin creating an ação from `/admin/acoes` picks a "Colaborador" (any active user) to set as `created_by`, so ações can be logged on a salesperson's behalf
+- Admins can reset any user's password directly from `/admin/usuarios` (`ResetSenhaButton` modal → `PUT /api/admin/usuarios` → `adminClient.auth.admin.updateUserById`). The admin types the new password (min 8 chars); it takes effect immediately with no email sent — there is no forgot-password/email-link flow in this app
 
 ### Shared Components
 

@@ -5,6 +5,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import type { User } from "@/types";
 import NovoUsuarioButton from "./NovoUsuarioButton";
 import ToggleAtivoButton from "./ToggleAtivoButton";
+import ResetSenhaButton from "./ResetSenhaButton";
 import { AdminBottomNav } from "@/components/AdminNav";
 
 export default async function AdminUsuariosPage() {
@@ -81,7 +82,10 @@ export default async function AdminUsuariosPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <ToggleAtivoButton userId={u.id} active={u.active} />
+                    <div className="flex items-center gap-2">
+                      <ResetSenhaButton userId={u.id} userName={u.name} />
+                      <ToggleAtivoButton userId={u.id} active={u.active} />
+                    </div>
                   </td>
                 </tr>
               ))}

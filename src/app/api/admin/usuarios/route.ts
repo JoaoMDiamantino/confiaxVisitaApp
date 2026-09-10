@@ -14,6 +14,11 @@ const PatchUsuarioSchema = z.object({
   active: z.boolean(),
 });
 
+const ResetSenhaSchema = z.object({
+  userId: z.string().uuid(),
+  password: z.string().min(8),
+});
+
 export async function POST(req: NextRequest) {
   // Verifica que o chamador é um admin autenticado
   const supabase = await createServerClient();
@@ -99,6 +104,37 @@ export async function PATCH(req: NextRequest) {
 
   if (updateError) {
     return NextResponse.json({ error: "Erro ao atualizar usuário." }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function PUT(req: NextRequest) {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "admin") {
+    return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+  }
+
+  const parsed3 = ResetSenhaSchema.safeParse(await req.json());
+  if (!parsed3.success) {
+    return NextResponse.json({ error: "Dados inválidos.", details: parsed3.error.flatten().fieldErrors }, { status: 400 });
+  }
+  const { userId, password } = parsed3.data;
+
+  const adminClient = createAdminClient();
+  const { error: resetError } = await adminClient.auth.admin.updateUserById(userId, { password });
+
+  if (resetError) {
+    return NextResponse.json({ error: resetError.message ?? "Erro ao redefinir senha." }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });
