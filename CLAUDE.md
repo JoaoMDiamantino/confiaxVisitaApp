@@ -36,13 +36,13 @@ Copy `.env.local.example` to `.env.local` and fill in the values before running.
 | Route | Role | Purpose |
 |---|---|---|
 | `/login` | All | Authentication |
-| `/dashboard` | Vendedor | Visit agenda and history |
+| `/dashboard` | Vendedor | Visit agenda and history; "ações em aberto" card counts only the logged-in user's own open/em_andamento ações (`created_by = user.id`), not the whole shared board |
 | `/visitas/agendar` | Vendedor | Schedule a new visit |
 | `/visitas/[id]/checkin` | Vendedor | Check-in with mandatory photo upload |
 | `/visitas/[id]/checkout` | Vendedor | Checkout with mandatory evaluation + optional contact registration |
 | `/historico` | Vendedor | Full visit history with imobiliária and date filters |
 | `/contatos` | Vendedor | Contact list per imobiliária — full CRUD |
-| `/acoes` | Vendedor | Action items ("Ações") board — create/edit, comment, change status |
+| `/acoes` | Vendedor | Action items ("Ações") board — create/edit, comment, change status; filterable by imobiliária, status, and responsável (colaborador who created it) — defaults to filtering by the logged-in user, who can clear it to see the whole shared board |
 | `/admin` | Admin | KPI dashboard |
 | `/admin/usuarios` | Admin | User management |
 | `/admin/visitas` | Admin | Full visit history with filters |
@@ -125,7 +125,7 @@ RLS: like contatos, all authenticated users may SELECT all ações/comentários 
 | `HistoricoList` | `src/components/HistoricoList.tsx` | Server component. Shows up to 5 completed visits; always renders a link to `/historico`. |
 | `HistoricoFiltros` | `src/components/HistoricoFiltros.tsx` | Client component. Receives all `visitas` and `imobiliarias` from server; filters client-side by imobiliária id and date range. Used in `/historico`. |
 | `ContatosVendedorClient` | `src/components/ContatosVendedorClient.tsx` | Client component for `/contatos`. Full-screen form overlay (checkout pattern) for create/edit. |
-| `AcoesVendedorClient` | `src/components/AcoesVendedorClient.tsx` | Client component for `/acoes`. Same full-screen overlay pattern as `ContatosVendedorClient`; título/descrição/due_date are disabled once an ação exists (admin-only edit), plus a comments section (list + add) inside the edit overlay. |
+| `AcoesVendedorClient` | `src/components/AcoesVendedorClient.tsx` | Client component for `/acoes`. Same full-screen overlay pattern as `ContatosVendedorClient`; título/descrição/due_date are disabled once an ação exists (admin-only edit), plus a comments section (list + add) inside the edit overlay. Also receives a `colaboradores` prop (active users) to power a "Responsável" filter (by `created_by`), mirroring `AcoesAdminTable`'s `filterCriador` — initialized to the logged-in `userId` by default, so the board opens scoped to "my ações" and the user can clear it to see everyone's. |
 | `AcoesAdminTable` | `src/components/AcoesAdminTable.tsx` | Client component for `/admin/acoes` — the supervisor board. Mirrors `VisitasAdminTable.tsx` (sortable columns, filters via `useMemo`, client-side pagination `PAGE_SIZE=50`). Also owns the "Nova Ação" creation modal (title/description/due_date/imobiliária + a "Colaborador" `<select>` that sets `created_by` on behalf of any active user). |
 | `AcaoDetailModal` | `src/components/AcaoDetailModal.tsx` | Detail/edit modal opened from `AcoesAdminTable`. Mirrors `VisitaDetailModal.tsx`'s layout, but adds an admin-only edit mode for título/descrição/due_date, a status `<select>`, and a comments section (list + add) — the first comment-thread UI in the app. |
 

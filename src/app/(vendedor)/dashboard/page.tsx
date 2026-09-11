@@ -38,6 +38,7 @@ export default async function DashboardPage() {
     supabase
       .from("acoes")
       .select("id")
+      .eq("created_by", user.id)
       .in("status", ["aberto", "em_andamento"]),
   ]);
 

@@ -2,13 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Acao, AcaoComentario, AcaoStatus, Imobiliaria } from "@/types";
+import type { Acao, AcaoComentario, AcaoStatus, Imobiliaria, User } from "@/types";
 import Combobox from "@/components/Combobox";
 import { ACAO_STATUS_COLOR, ACAO_STATUS_LABEL, formatDate, formatDateOnly, getEffectiveAcaoStatus } from "@/lib/utils";
 
 interface Props {
   initialAcoes: Acao[];
   imobiliarias: Imobiliaria[];
+  colaboradores: Pick<User, "id" | "name">[];
   userId: string;
 }
 
@@ -28,11 +29,12 @@ const emptyForm = (imobiliaria_id = ""): AcaoForm => ({
   status: "aberto",
 });
 
-export default function AcoesVendedorClient({ initialAcoes, imobiliarias, userId }: Props) {
+export default function AcoesVendedorClient({ initialAcoes, imobiliarias, colaboradores, userId }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [acoes, setAcoes] = useState<Acao[]>(initialAcoes);
   const [filtroImob, setFiltroImob] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
+  const [filtroResponsavel, setFiltroResponsavel] = useState(userId);
   const [modal, setModal] = useState<null | "new" | Acao>(null);
   const [form, setForm] = useState<AcaoForm>(emptyForm());
   const [saving, setSaving] = useState(false);
@@ -47,6 +49,7 @@ export default function AcoesVendedorClient({ initialAcoes, imobiliarias, userId
   const filtered = acoes.filter((a) => {
     if (filtroImob && a.imobiliaria_id !== filtroImob) return false;
     if (filtroStatus && getEffectiveAcaoStatus(a) !== filtroStatus) return false;
+    if (filtroResponsavel && a.created_by !== filtroResponsavel) return false;
     return true;
   });
 
@@ -155,7 +158,7 @@ export default function AcoesVendedorClient({ initialAcoes, imobiliarias, userId
   return (
     <>
       {/* Filtros */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <div>
           <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
             Imobiliária
@@ -185,12 +188,24 @@ export default function AcoesVendedorClient({ initialAcoes, imobiliarias, userId
             <option value="cancelado">Cancelado</option>
           </select>
         </div>
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Responsável
+          </label>
+          <Combobox
+            options={colaboradores.map((c) => ({ value: c.id, label: c.name }))}
+            value={filtroResponsavel}
+            onChange={setFiltroResponsavel}
+            placeholder="Todos os responsáveis"
+            emptyMessage="Nenhum colaborador encontrado."
+          />
+        </div>
       </div>
 
       {/* Cabeçalho da seção + botão novo */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-          {filtered.length} ação{filtered.length !== 1 ? "ões" : ""}
+          {filtered.length} {filtered.length === 1 ? "ação" : "ações"}
         </p>
         <button
           onClick={openNew}

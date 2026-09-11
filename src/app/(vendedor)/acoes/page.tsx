@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Image from "next/image";
 import { createServerClient } from "@/lib/supabase/server";
-import type { Acao, Imobiliaria } from "@/types";
+import type { Acao, Imobiliaria, User } from "@/types";
 import VendedorBottomNav from "@/components/VendedorBottomNav";
 import AcoesVendedorClient from "@/components/AcoesVendedorClient";
 
@@ -10,12 +10,13 @@ export default async function AcoesPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [acoesResult, imobiliariasResult] = await Promise.all([
+  const [acoesResult, imobiliariasResult, colaboradoresResult] = await Promise.all([
     supabase
       .from("acoes")
       .select("*, imobiliarias(id, name), users(id, name, email)")
       .order("due_date"),
     supabase.from("imobiliarias").select("id, name").order("name").limit(5000),
+    supabase.from("users").select("id, name").eq("active", true).order("name"),
   ]);
 
   return (
@@ -29,6 +30,7 @@ export default async function AcoesPage() {
         <AcoesVendedorClient
           initialAcoes={(acoesResult.data as Acao[]) ?? []}
           imobiliarias={(imobiliariasResult.data as Imobiliaria[]) ?? []}
+          colaboradores={(colaboradoresResult.data as Pick<User, "id" | "name">[]) ?? []}
           userId={user.id}
         />
       </main>
