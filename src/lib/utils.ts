@@ -46,6 +46,17 @@ export function getEffectiveAcaoStatus(acao: { status: string; due_date: string 
   return dueDay < todaySP ? "atrasado" : acao.status;
 }
 
+// Concluídas e canceladas saem do quadro por padrão (ver "Mostrar finalizadas").
+export function isAcaoFinalizada(acao: { status: string }): boolean {
+  return acao.status === "concluido" || acao.status === "cancelado";
+}
+
+// "Atualizado em": status, edição de campos ou novo comentário avançam updated_at.
+// Igual a created_at (mesmo DEFAULT now() no insert) = nunca foi atualizada.
+export function getAcaoAtualizadaEm(acao: { created_at: string; updated_at: string }): string | null {
+  return acao.updated_at && acao.updated_at !== acao.created_at ? acao.updated_at : null;
+}
+
 export const ACAO_STATUS_LABEL: Record<string, string> = {
   aberto: "Aberto",
   em_andamento: "Em andamento",

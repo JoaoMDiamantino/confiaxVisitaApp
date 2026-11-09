@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Acao, AcaoComentario, AcaoStatus, Imobiliaria, User } from "@/types";
 import Combobox from "@/components/Combobox";
-import { ACAO_STATUS_COLOR, ACAO_STATUS_LABEL, formatDate, formatDateOnly, getEffectiveAcaoStatus } from "@/lib/utils";
+import { ACAO_STATUS_COLOR, ACAO_STATUS_LABEL, formatDate, formatDateOnly, getAcaoAtualizadaEm, getEffectiveAcaoStatus, isAcaoFinalizada } from "@/lib/utils";
 
 interface Props {
   initialAcoes: Acao[];
@@ -35,6 +35,7 @@ export default function AcoesVendedorClient({ initialAcoes, imobiliarias, colabo
   const [filtroImob, setFiltroImob] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
   const [filtroResponsavel, setFiltroResponsavel] = useState(userId);
+  const [mostrarFinalizadas, setMostrarFinalizadas] = useState(false);
   const [modal, setModal] = useState<null | "new" | Acao>(null);
   const [form, setForm] = useState<AcaoForm>(emptyForm());
   const [saving, setSaving] = useState(false);
@@ -46,7 +47,11 @@ export default function AcoesVendedorClient({ initialAcoes, imobiliarias, colabo
   const [comentando, setComentando] = useState(false);
   const [comentarioError, setComentarioError] = useState<string | null>(null);
 
+  // Finalizadas ficam ocultas, a menos que o usuário peça para vê-las
+  // (checkbox ou filtro de status explícito em Concluído/Cancelado).
+  const statusFinal = filtroStatus === "concluido" || filtroStatus === "cancelado";
   const filtered = acoes.filter((a) => {
+    if (!mostrarFinalizadas && !statusFinal && isAcaoFinalizada(a)) return false;
     if (filtroImob && a.imobiliaria_id !== filtroImob) return false;
     if (filtroStatus && getEffectiveAcaoStatus(a) !== filtroStatus) return false;
     if (filtroResponsavel && a.created_by !== filtroResponsavel) return false;
@@ -153,6 +158,17 @@ export default function AcoesVendedorClient({ initialAcoes, imobiliarias, colabo
     if (error) { setComentarioError("Erro ao comentar. Tente novamente."); return; }
     setComentarios((prev) => [...prev, data as AcaoComentario]);
     setNovoComentario("");
+
+    // Novo comentário conta como atualização da ação ("Atualizado em").
+    const acaoId = (modal as Acao).id;
+    const { data: bumped, error: bumpError } = await supabase
+      .from("acoes")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", acaoId)
+      .select("*, imobiliarias(id, name), users(id, name, email)")
+      .single();
+    if (bumpError) console.error("Falha ao atualizar updated_at da ação após comentário:", bumpError);
+    else if (bumped) setAcoes((prev) => prev.map((x) => (x.id === acaoId ? (bumped as Acao) : x)));
   }
 
   return (
@@ -203,10 +219,21 @@ export default function AcoesVendedorClient({ initialAcoes, imobiliarias, colabo
       </div>
 
       {/* Cabeçalho da seção + botão novo */}
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-          {filtered.length} {filtered.length === 1 ? "ação" : "ações"}
-        </p>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex flex-col gap-1">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+            {filtered.length} {filtered.length === 1 ? "ação" : "ações"}
+          </p>
+          <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={mostrarFinalizadas}
+              onChange={(e) => setMostrarFinalizadas(e.target.checked)}
+              className="rounded border-gray-300 text-primary focus:ring-primary/30"
+            />
+            Mostrar finalizadas
+          </label>
+        </div>
         <button
           onClick={openNew}
           className="bg-primary text-white text-xs font-semibold rounded-xl px-4 min-h-[44px] flex items-center gap-1.5 hover:bg-primary-dark active:scale-95 transition"
@@ -226,7 +253,9 @@ export default function AcoesVendedorClient({ initialAcoes, imobiliarias, colabo
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="text-sm text-gray-400 mb-2">Nenhuma ação cadastrada.</p>
+          <p className="text-sm text-gray-400 mb-2">
+            {acoes.length === 0 ? "Nenhuma ação cadastrada." : "Nenhuma ação encontrada para os filtros selecionados."}
+          </p>
           <button onClick={openNew} className="text-xs text-primary font-semibold hover:underline">
             Adicionar agora →
           </button>
@@ -235,6 +264,7 @@ export default function AcoesVendedorClient({ initialAcoes, imobiliarias, colabo
         <div className="space-y-3">
           {filtered.map((a) => {
             const effective = getEffectiveAcaoStatus(a);
+            const atualizadaEm = getAcaoAtualizadaEm(a);
             return (
               <button
                 key={a.id}
@@ -255,7 +285,12 @@ export default function AcoesVendedorClient({ initialAcoes, imobiliarias, colabo
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-2 line-clamp-2">{a.description}</p>
-                  <p className="text-xs text-gray-400 mt-2">Finalizar até {formatDateOnly(a.due_date)}</p>
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mt-2">
+                    <p className="text-xs text-gray-400">Finalizar até {formatDateOnly(a.due_date)}</p>
+                    {atualizadaEm && (
+                      <p className="text-xs text-gray-400">Atualizado em {formatDate(atualizadaEm)}</p>
+                    )}
+                  </div>
                 </div>
               </button>
             );

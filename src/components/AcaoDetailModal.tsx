@@ -127,6 +127,16 @@ export default function AcaoDetailModal({ acao, userId, onClose, onUpdated }: Pr
     if (error) { setComentarioError("Erro ao comentar. Tente novamente."); return; }
     setComentarios((prev) => [...prev, data as AcaoComentario]);
     setNovoComentario("");
+
+    // Novo comentário conta como atualização da ação ("Atualizado em").
+    const { data: bumped, error: bumpError } = await supabase
+      .from("acoes")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", acao!.id)
+      .select("*, imobiliarias(id, name), users(id, name, email)")
+      .single();
+    if (bumpError) console.error("Falha ao atualizar updated_at da ação após comentário:", bumpError);
+    else if (bumped) onUpdated(bumped as Acao);
   }
 
   return (

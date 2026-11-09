@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Acao, Imobiliaria, User } from "@/types";
-import { ACAO_STATUS_COLOR, ACAO_STATUS_LABEL, formatDate, formatDateOnly, getEffectiveAcaoStatus } from "@/lib/utils";
+import { ACAO_STATUS_COLOR, ACAO_STATUS_LABEL, formatDate, formatDateOnly, getAcaoAtualizadaEm, getEffectiveAcaoStatus, isAcaoFinalizada } from "@/lib/utils";
 import AcaoDetailModal from "@/components/AcaoDetailModal";
 import Combobox from "@/components/Combobox";
 
@@ -15,7 +15,7 @@ interface NovaAcaoForm {
   colaborador_id: string;
 }
 
-type SortKey = "title" | "imobiliaria" | "due_date" | "status" | "criado_por" | "created_at";
+type SortKey = "title" | "imobiliaria" | "due_date" | "status" | "criado_por" | "created_at" | "updated_at";
 type SortDir = "asc" | "desc";
 
 const COLS: { label: string; key: SortKey }[] = [
@@ -25,6 +25,7 @@ const COLS: { label: string; key: SortKey }[] = [
   { label: "Status",           key: "status" },
   { label: "Criado por",       key: "criado_por" },
   { label: "Criado em",        key: "created_at" },
+  { label: "Atualizado em",    key: "updated_at" },
 ];
 
 function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
@@ -72,6 +73,7 @@ export default function AcoesAdminTable({ acoes: initialAcoes, imobiliarias, col
   const [filterCriador, setFilterCriador] = useState("");
   const [filterDueFrom, setFilterDueFrom] = useState("");
   const [filterDueTo, setFilterDueTo] = useState("");
+  const [mostrarFinalizadas, setMostrarFinalizadas] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("due_date");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
@@ -96,6 +98,10 @@ export default function AcoesAdminTable({ acoes: initialAcoes, imobiliarias, col
   const displayed = useMemo(() => {
     let result = acoes;
 
+    // Finalizadas ficam ocultas, a menos que o usuário peça para vê-las
+    // (checkbox ou filtro de status explícito em Concluído/Cancelado).
+    const statusFinal = filterStatus === "concluido" || filterStatus === "cancelado";
+    if (!mostrarFinalizadas && !statusFinal) result = result.filter((a) => !isAcaoFinalizada(a));
     if (filterImob) result = result.filter((a) => a.imobiliaria_id === filterImob);
     if (filterStatus) result = result.filter((a) => getEffectiveAcaoStatus(a) === filterStatus);
     if (filterCriador) result = result.filter((a) => a.created_by === filterCriador);
@@ -125,12 +131,13 @@ export default function AcoesAdminTable({ acoes: initialAcoes, imobiliarias, col
           valB = (b.users as { name: string } | undefined)?.name ?? "";
           break;
         case "created_at": valA = a.created_at; valB = b.created_at; break;
+        case "updated_at": valA = getAcaoAtualizadaEm(a) ?? ""; valB = getAcaoAtualizadaEm(b) ?? ""; break;
       }
 
       const cmp = valA.localeCompare(valB, "pt-BR");
       return sortDir === "asc" ? cmp : -cmp;
     });
-  }, [acoes, filterImob, filterStatus, filterCriador, filterDueFrom, filterDueTo, sortKey, sortDir]);
+  }, [acoes, mostrarFinalizadas, filterImob, filterStatus, filterCriador, filterDueFrom, filterDueTo, sortKey, sortDir]);
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -147,7 +154,7 @@ export default function AcoesAdminTable({ acoes: initialAcoes, imobiliarias, col
 
   useEffect(() => {
     setPage(1);
-  }, [filterImob, filterStatus, filterCriador, filterDueFrom, filterDueTo, sortKey, sortDir]);
+  }, [mostrarFinalizadas, filterImob, filterStatus, filterCriador, filterDueFrom, filterDueTo, sortKey, sortDir]);
 
   const hasFilter = filterImob || filterStatus || filterCriador || filterDueFrom || filterDueTo;
 
@@ -268,17 +275,28 @@ export default function AcoesAdminTable({ acoes: initialAcoes, imobiliarias, col
             <span className="font-semibold text-gray-600">{displayed.length}</span> de {acoes.length} ações
             {totalPages > 1 && ` · pág. ${page}/${totalPages}`}
           </p>
-          {hasFilter && (
-            <button onClick={clearFilters} className="text-xs font-medium text-primary hover:text-primary-dark transition">
-              Limpar filtros
-            </button>
-          )}
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={mostrarFinalizadas}
+                onChange={(e) => setMostrarFinalizadas(e.target.checked)}
+                className="rounded border-gray-300 text-primary focus:ring-primary/30"
+              />
+              Mostrar finalizadas
+            </label>
+            {hasFilter && (
+              <button onClick={clearFilters} className="text-xs font-medium text-primary hover:text-primary-dark transition">
+                Limpar filtros
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Table */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
-        <table className="w-full text-sm min-w-[700px]">
+        <table className="w-full text-sm min-w-[820px]">
           <thead>
             <tr className="border-b border-gray-100 text-left">
               {COLS.map((col) => (
@@ -297,6 +315,7 @@ export default function AcoesAdminTable({ acoes: initialAcoes, imobiliarias, col
           <tbody>
             {paged.map((a) => {
               const effective = getEffectiveAcaoStatus(a);
+              const atualizadaEm = getAcaoAtualizadaEm(a);
               return (
                 <tr
                   key={a.id}
@@ -317,12 +336,15 @@ export default function AcoesAdminTable({ acoes: initialAcoes, imobiliarias, col
                     {(a.users as { name: string } | undefined)?.name}
                   </td>
                   <td className="px-5 py-3.5 text-gray-500 text-xs">{formatDate(a.created_at)}</td>
+                  <td className="px-5 py-3.5 text-gray-500 text-xs">
+                    {atualizadaEm ? formatDate(atualizadaEm) : <span className="text-gray-300">—</span>}
+                  </td>
                 </tr>
               );
             })}
             {displayed.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-5 py-8 text-center text-sm text-gray-400">
+                <td colSpan={COLS.length} className="px-5 py-8 text-center text-sm text-gray-400">
                   Nenhuma ação encontrada para os filtros selecionados.
                 </td>
               </tr>

@@ -42,12 +42,12 @@ Copy `.env.local.example` to `.env.local` and fill in the values before running.
 | `/visitas/[id]/checkout` | Vendedor | Checkout with mandatory evaluation + optional contact registration |
 | `/historico` | Vendedor | Full visit history with imobiliária and date filters |
 | `/contatos` | Vendedor | Contact list per imobiliária — full CRUD |
-| `/acoes` | Vendedor | Action items ("Ações") board — create/edit, comment, change status; filterable by imobiliária, status, and responsável (colaborador who created it) — defaults to filtering by the logged-in user, who can clear it to see the whole shared board |
+| `/acoes` | Vendedor | Action items ("Ações") board — create/edit, comment, change status; filterable by imobiliária, status, and responsável (colaborador who created it) — defaults to filtering by the logged-in user, who can clear it to see the whole shared board. Finalizadas (concluído/cancelado) hidden by default; each card shows "Atualizado em" when the ação has been updated |
 | `/admin` | Admin | KPI dashboard |
 | `/admin/usuarios` | Admin | User management |
 | `/admin/visitas` | Admin | Full visit history with filters |
 | `/admin/contatos` | Admin | Full contact list with imobiliária filter — create, edit, delete |
-| `/admin/acoes` | Admin | Full action-item board with filters, sorting, pagination — create (on behalf of any colaborador), edit title/description/due date, change status, comment |
+| `/admin/acoes` | Admin | Full action-item board with filters, sorting, pagination — create (on behalf of any colaborador), edit title/description/due date, change status, comment. Finalizadas hidden by default; sortable "Atualizado em" column |
 | `/admin/relatorios` | Admin | CSV/PDF report export (visits + contacts) |
 
 Session and role are managed via Supabase Auth. Route guards live in `src/proxy.ts` (Next.js 16 renamed `middleware.ts` → `proxy.ts`). They redirect unauthenticated users to `/login` and enforce role checks (vendedor cannot access `/admin/*`).
@@ -108,6 +108,8 @@ RLS: like contatos, all authenticated users may SELECT all ações/comentários 
 - Check-in photos are compressed client-side before upload — use `compressImage` from `src/lib/utils.ts` (resizes to max 1600px, re-encodes as JPEG) for any new photo upload flow, to reduce failures on weak mobile connections. Uploads to Supabase Storage should retry on transient failure (see `uploadPhotoWithRetry` in `src/app/(vendedor)/visitas/[id]/checkin/page.tsx` as the reference pattern) and log the real Supabase error via `console.error` rather than only showing a generic message
 - Ações (`acoes`) can be registered during checkout (linked to the visit, same optional inline-form pattern as contacts) or anytime from `/acoes`; unlike contacts, imobiliária is optional and the section is shown even on captação (prospecting) visits
 - Only an admin can edit an ação's título/descrição/data de finalização once created (enforced both in the UI — fields disabled for vendedores in `AcoesVendedorClient.tsx` — and in the DB via the `enforce_acao_locked_fields` trigger); any vendedor may still change status and add comments
+- Both ação boards (`/acoes` and `/admin/acoes`) hide finalizadas — `concluido` **and** `cancelado`, per `isAcaoFinalizada()` in `src/lib/utils.ts` — by default. They reappear when the user ticks "Mostrar finalizadas" or explicitly picks Concluído/Cancelado in the status filter. The `/admin/acoes` page still loads them (`.limit(500)`); hiding is client-side
+- "Atualizado em" tracks activity on an ação via `acoes.updated_at`. Every app path that changes an ação sets `updated_at` explicitly (status change, field edit) **and posting a comment also bumps the parent ação's `updated_at`** (in both `AcaoDetailModal.tsx` and `AcoesVendedorClient.tsx`, after the `acao_comentarios` insert) — keep this in any new comment/update flow. `getAcaoAtualizadaEm()` returns `null` when `updated_at === created_at` (never touched since creation), rendered as "—" in the admin table and omitted on vendedor cards; never-updated ações sort last when sorting by "Atualizado em" descending
 - An admin creating an ação from `/admin/acoes` picks a "Colaborador" (any active user) to set as `created_by`, so ações can be logged on a salesperson's behalf
 - Admins can reset any user's password directly from `/admin/usuarios` (`ResetSenhaButton` modal → `PUT /api/admin/usuarios` → `adminClient.auth.admin.updateUserById`). The admin types the new password (min 8 chars); it takes effect immediately with no email sent — there is no forgot-password/email-link flow in this app
 
