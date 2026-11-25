@@ -34,7 +34,7 @@ export default function RelatoriosClient() {
 
     const { data, error: fetchError } = await supabase
       .from("visitas")
-      .select("*, users(name, email), imobiliarias(name)")
+      .select("*, users(name, email), imobiliarias(name), prospectos(name)")
       .eq("status", "concluida")
       .gte("scheduled_at", new Date(inicio).toISOString())
       .lte("scheduled_at", new Date(fim + "T23:59:59").toISOString())
@@ -45,15 +45,22 @@ export default function RelatoriosClient() {
     return (data as Visita[]) ?? [];
   }
 
+  // Visitas de captação não têm imobiliária — o nome vem do prospecto
+  const nomeImob = (v: Visita) =>
+    (v.imobiliarias as { name: string } | undefined)?.name ??
+    (v.prospectos as { name: string } | undefined)?.name ??
+    "";
+
   async function exportCSV() {
     const visitas = await fetchVisitas();
     if (visitas.length === 0) { setError("Nenhuma visita no período selecionado."); return; }
 
-    const header = ["Gestor", "E-mail", "Imobiliária", "Data agendada", "Check-in", "Checkout", "Duração (min)", "Nota", "Comentários"];
+    const header = ["Gestor", "E-mail", "Imobiliária", "Captação", "Data agendada", "Check-in", "Checkout", "Duração (min)", "Nota", "Comentários"];
     const rows = visitas.map((v) => [
       (v.users as { name: string } | undefined)?.name ?? "",
       (v.users as { email: string } | undefined)?.email ?? "",
-      (v.imobiliarias as { name: string } | undefined)?.name ?? "",
+      nomeImob(v),
+      v.prospecto_id ? "Sim" : "Não",
       formatDate(v.scheduled_at),
       v.checkin_at ? formatDate(v.checkin_at) : "",
       v.checkout_at ? formatDate(v.checkout_at) : "",
@@ -91,10 +98,11 @@ export default function RelatoriosClient() {
 
     autoTable(doc, {
       startY: 22,
-      head: [["Gestor", "Imobiliária", "Data agendada", "Check-in", "Duração", "Nota", "Comentários"]],
+      head: [["Gestor", "Imobiliária", "Captação", "Data agendada", "Check-in", "Duração", "Nota", "Comentários"]],
       body: visitas.map((v) => [
         (v.users as { name: string } | undefined)?.name ?? "",
-        (v.imobiliarias as { name: string } | undefined)?.name ?? "",
+        nomeImob(v) || "—",
+        v.prospecto_id ? "Sim" : "Não",
         formatDate(v.scheduled_at),
         v.checkin_at ? formatDate(v.checkin_at) : "—",
         v.duration_minutes ? formatDuration(v.duration_minutes) : "—",
@@ -103,7 +111,7 @@ export default function RelatoriosClient() {
       ]),
       styles: { fontSize: 9 },
       headStyles: { fillColor: [0, 174, 239] },
-      columnStyles: { 6: { cellWidth: 60 } },
+      columnStyles: { 7: { cellWidth: 60 } },
     });
 
     doc.save(`visitas_${inicio}_${fim}.pdf`);

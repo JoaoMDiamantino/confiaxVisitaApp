@@ -64,9 +64,13 @@ No SQL migrations are tracked in this repo (no `supabase/migrations` folder) —
 **`imobiliarias`** — pre-seeded directly in Supabase (no app UI in v1)
 - `id` uuid PK, `name` text, `address` text, `contact` text, `created_at` timestamp
 
+**`prospectos`** — prospecting targets (companies not yet in `imobiliarias`), created by vendedores when scheduling a captação visit
+- `id` uuid PK, `name` text, `created_by` uuid → users (nullable), `created_at` timestamp
+
 **`visitas`**
 - `id` uuid PK
-- `user_id` uuid → users, `imobiliaria_id` uuid → imobiliarias
+- `user_id` uuid → users, `imobiliaria_id` uuid → imobiliarias (**nullable**), `prospecto_id` uuid → prospectos (nullable)
+- A **visita de captação** is one with `prospecto_id` set and no imobiliária (`isCaptacao = !!visita.prospecto_id`)
 - `scheduled_at` timestamp, `checkin_at` timestamp, `checkout_at` timestamp
 - `duration_minutes` integer (computed on checkout)
 - `photo_url` text (Supabase Storage URL)
@@ -103,6 +107,7 @@ RLS: like contatos, all authenticated users may SELECT all ações/comentários 
 - No minimum visit duration enforced
 - Inactive users (`active = false`) must be blocked at login
 - Imobiliárias are managed directly in Supabase — there is no app UI for this in v1
+- Captação visits have no imobiliária: anywhere a visit's company name is shown or exported, join `prospectos(name)` alongside `imobiliarias(name)` and use the fallback `imobiliarias?.name ?? prospectos?.name` (see `VisitasAdminTable.tsx`, `RelatoriosClient.tsx`) — otherwise the name comes out blank. Visit exports in `/admin/relatorios` (CSV and PDF) include a "Captação" column (Sim/Não)
 - Contacts (`contatos`) can be registered during checkout (linked to the visit) or anytime from `/contatos`
 - Phone numbers must always be displayed and entered with the Brazilian mask `(XX) XXXXX-XXXX` / `(XX) XXXX-XXXX` — use `formatPhone` from `src/lib/utils.ts` for both input masking (`onChange`) and display
 - Check-in photos are compressed client-side before upload — use `compressImage` from `src/lib/utils.ts` (resizes to max 1600px, re-encodes as JPEG) for any new photo upload flow, to reduce failures on weak mobile connections. Uploads to Supabase Storage should retry on transient failure (see `uploadPhotoWithRetry` in `src/app/(vendedor)/visitas/[id]/checkin/page.tsx` as the reference pattern) and log the real Supabase error via `console.error` rather than only showing a generic message
